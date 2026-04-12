@@ -362,26 +362,6 @@ def market_prices_view(request):
     return render(request, 'market_analys/market_prices.html', context)
 
 
-@login_required
-def sync_market_prices(request):
-    """CRM dan bozor narxlarini lokal DB ga sync qilish (AJAX)"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Faqat POST'}, status=405)
-
-    try:
-        client = CRMAPIClient()
-        created, updated, errors = client.sync_market_prices_to_db()
-        return JsonResponse({
-            'success': True,
-            'created': created,
-            'updated': updated,
-            'errors': errors,
-            'message': f"Sync tugadi: +{created} yangi, ↻{updated} yangilangan, ❌{errors} xato"
-        })
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
 # ==========================================
 # AJAX Endpoints
 # ==========================================

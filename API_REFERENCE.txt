@@ -668,6 +668,7 @@ new_token = r.json()["access"]
   GET   | /api/ip-phone/<id>/                   | JWT  | Bitta qo'ng'iroq
   ──────────────────────────────────────────────────────────────────────────────
   GET   | /api/addresses/                       | Opt* | Manzillar
+  GET   | /api/destinations/                    | Opt* | Mo'ljallar (mikrorayon, hudud)
   GET   | /api/Categorys/                       | Opt* | Kategoriyalar
   GET   | /api/SubCategorys/                    | Opt* | Ichki kategoriyalar
   GET   | /api/Sources/                         | Opt* | Manbalar

@@ -84,7 +84,6 @@
     <div class="section-header">
         <h2>💰 Bozor Narxlari Ma'lumotnomasi</h2>
         <div style="display:flex; gap:10px; align-items:center;">
-            <button id="syncBtn" class="btn btn-outline-success" style="font-size:0.85rem;">🔄 Sync</button>
             <a href="{% url 'market_analys:dashboard' %}" class="btn btn-outline-primary" style="font-size:0.85rem;">← Dashboard</a>
         </div>
     </div>
@@ -230,38 +229,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const syncBtn = document.getElementById('syncBtn');
-    if (!syncBtn) return;
-
-    syncBtn.addEventListener('click', function() {
-        syncBtn.disabled = true;
-        syncBtn.innerHTML = '⏳ Sync...';
-
-        fetch('{% url "market_analys:sync_market_prices" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            syncBtn.disabled = false;
-            syncBtn.innerHTML = '🔄 Sync';
-            if (data.success) {
-                alert('✅ ' + data.message);
-                location.reload();
-            } else {
-                alert('❌ ' + data.error);
-            }
-        })
-        .catch(err => {
-            syncBtn.disabled = false;
-            syncBtn.innerHTML = '🔄 Sync';
-            alert('❌ Xato: ' + err.message);
-        });
-    });
-});
 
 function getCookie(name) {
     let v = null;

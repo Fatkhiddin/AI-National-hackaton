@@ -1,4 +1,5 @@
 from django import template
+from datetime import datetime
 
 register = template.Library()
 
@@ -48,3 +49,15 @@ def dict_name(value):
     if isinstance(value, dict):
         return value.get('name', '—')
     return value
+
+
+@register.filter
+def format_datetime(value):
+    """'2026-04-11T17:56:31.289350+05:00' → '11.04.2026 17:56'"""
+    if not value:
+        return "—"
+    try:
+        dt = datetime.fromisoformat(str(value))
+        return dt.strftime('%d.%m.%Y %H:%M')
+    except (ValueError, TypeError):
+        return value

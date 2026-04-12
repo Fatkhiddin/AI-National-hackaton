@@ -473,11 +473,11 @@
             </div>
             <div class="info-item">
                 <span class="label">📅 Yaratilgan:</span>
-                <span class="value">{{ obj.created_at|default:"—" }}</span>
+                <span class="value">{{ obj.created_at|format_datetime }}</span>
             </div>
             <div class="info-item">
                 <span class="label">🔄 Yangilangan:</span>
-                <span class="value">{{ obj.updated_at|default:"—" }}</span>
+                <span class="value">{{ obj.updated_at|format_datetime }}</span>
             </div>
             <div class="info-item">
                 <span class="label">🗄️ Arxiv:</span>
@@ -655,7 +655,7 @@
             </div>
             <div class="analysis-row">
                 <span>Tahlil vaqti:</span>
-                <strong>{{ analysis.analyzed_at }}</strong>
+                <strong>{{ analysis.analyzed_at|format_datetime }}</strong>
             </div>
         </div>
         {% if analysis.ai_tahlil %}

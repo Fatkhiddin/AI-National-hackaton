@@ -23,5 +23,4 @@ urlpatterns = [
     # AJAX endpoints
     path('api/sync/', views.sync_crm_objects, name='sync_crm'),
     path('api/analyze/', views.api_analyze_object, name='api_analyze'),
-    path('api/sync-prices/', views.sync_market_prices, name='sync_market_prices'),
 ]
