@@ -88,9 +88,9 @@
         <h4>🏢 Obyekt Ma'lumotlari (CRM #{{ property_data.id }})</h4>
         <div class="property-grid">
             <div class="item"><strong>Xonalar:</strong> {{ property_data.rooms_numbers|default:"—" }}</div>
-            <div class="item"><strong>Umumiy maydon:</strong> {{ property_data.general_area|default:"—" }} m²</div>
-            <div class="item"><strong>Qavat:</strong> {{ property_data.floor|default:"—" }} / {{ property_data.number_of_floors|default:"—" }}</div>
-            <div class="item"><strong>Narx ($):</strong> {{ property_data.price_usd|default:"—" }}</div>
+            <div class="item"><strong>Umumiy maydon:</strong> {{ property_data.total_area|default:"—" }} m²</div>
+            <div class="item"><strong>Qavat:</strong> {{ property_data.floor|default:"—" }} / {{ property_data.floor_build|default:"—" }}</div>
+            <div class="item"><strong>Narx ($):</strong> {{ property_data.price_starting|default:"—" }}</div>
             {% if property_data.state_repair %}
             <div class="item"><strong>Ta'mir:</strong> {{ property_data.state_repair }}</div>
             {% endif %}
@@ -138,7 +138,7 @@
         <div class="ai-text"><strong>🤖 AI Tahlil:</strong><br>{{ analysis.ai_tahlil }}</div>
         {% endif %}
         {% if analysis.tavsiya %}
-        <div class="ai-text" style="background: #f0fdf4;"><strong>💡 Tavsiya:</strong><br>{{ analysis.tavsiya }}</div>
+        <div class="ai-text" style="background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.15);"><strong>💡 Tavsiya:</strong><br>{{ analysis.tavsiya }}</div>
         {% endif %}
     </div>
     {% endif %}

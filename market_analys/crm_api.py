@@ -309,6 +309,32 @@ class CRMAPIClient:
     def get_addresses(self):
         return self.get_lookup('addresses')
 
+    def get_sources(self):
+        return self.get_lookup('Sources')
+
+    def get_destinations(self):
+        return self.get_lookup('destinations')
+
+    # ==========================================
+    # Users & Teams
+    # ==========================================
+
+    def get_users(self, **params):
+        """Jamoadagi foydalanuvchilar ro'yxati"""
+        return self._make_request('users/', params=params)
+
+    def get_user(self, user_id):
+        """Bitta foydalanuvchi ID bo'yicha"""
+        return self._make_request(f'users/{user_id}/')
+
+    def get_teams(self):
+        """Jamoalar ro'yxati"""
+        return self._make_request('teams/')
+
+    def get_team(self, team_id):
+        """Bitta jamoa ID bo'yicha"""
+        return self._make_request(f'teams/{team_id}/')
+
     # ==========================================
     # Statistika
     # ==========================================
@@ -368,15 +394,19 @@ class CRMAPIClient:
         else:
             full_address = ''
 
-        # State repair
+        # State repair (str, dict yoki int bo'lishi mumkin)
         state_repair = api_obj.get('state_repair', '')
         if isinstance(state_repair, dict):
             state_repair = state_repair.get('name', '')
+        elif isinstance(state_repair, int):
+            state_repair = str(state_repair)  # ID sifatida qoladi, view da resolve qilinadi
 
-        # Type building
+        # Type building (str, dict yoki int bo'lishi mumkin)
         type_building = api_obj.get('type_building', '')
         if isinstance(type_building, dict):
             type_building = type_building.get('name', '')
+        elif isinstance(type_building, int):
+            type_building = str(type_building)
 
         return {
             'id': api_obj.get('id'),

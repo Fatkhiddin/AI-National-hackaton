@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load market_filters %}
 
 {% block title %}CRM Obyektlar - Market Analiz{% endblock %}
 {% block page_title %}🏢 CRM Obyektlar{% endblock %}
@@ -114,7 +115,7 @@
             <div class="object-card-header">
                 <span class="obj-id">#{{ obj.id }}</span>
                 <span class="obj-price">
-                    {% if obj.price_usd %}${{ obj.price_usd|floatformat:0 }}{% else %}Narx ko'rsatilmagan{% endif %}
+                    {% if obj.price_starting %}{{ obj.price_starting|format_price }}{% else %}Narx ko'rsatilmagan{% endif %}
                 </span>
             </div>
             <div class="object-detail-row">
@@ -123,16 +124,22 @@
             </div>
             <div class="object-detail-row">
                 <span class="detail-label">Maydon:</span>
-                <span>{{ obj.general_area|default:"—" }} m²</span>
+                <span>{{ obj.total_area|format_number }} m²</span>
             </div>
             <div class="object-detail-row">
                 <span class="detail-label">Qavat:</span>
-                <span>{{ obj.floor|default:"—" }} / {{ obj.number_of_floors|default:"—" }}</span>
+                <span>{{ obj.floor|default:"—" }} / {{ obj.floor_build|default:"—" }}</span>
             </div>
-            {% if obj.address %}
+            {% if obj.address_landwarkr %}
             <div class="object-detail-row">
                 <span class="detail-label">Manzil:</span>
-                <span>{{ obj.address.street|default:"" }} {{ obj.address.house|default:"" }}</span>
+                <span>{{ obj.address_landwarkr }}</span>
+            </div>
+            {% endif %}
+            {% if obj.type_building %}
+            <div class="object-detail-row">
+                <span class="detail-label">Qurilish:</span>
+                <span>{{ obj.type_building }}</span>
             </div>
             {% endif %}
             <div class="object-actions">

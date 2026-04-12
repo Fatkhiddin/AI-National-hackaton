@@ -118,10 +118,70 @@ def crm_object_detail(request, object_id):
 
     try:
         client = CRMAPIClient()
-        obj = client.get_object(object_id)
+        raw_obj = client.get_object(object_id)
 
-        if not obj:
+        if not raw_obj:
             error_message = f"Obyekt #{object_id} topilmadi"
+        else:
+            obj = raw_obj
+
+            # int ID → nomi resolve qilish funksiyasi
+            def resolve_id(field, lookup_func):
+                val = obj.get(field, '')
+                if isinstance(val, int):
+                    data = lookup_func()
+                    if data and 'results' in data:
+                        for item in data['results']:
+                            if item['id'] == val:
+                                return item.get('name', str(val))
+                    return str(val)
+                elif isinstance(val, dict):
+                    return val.get('name', '')
+                return val or ''
+
+            obj['state_repair'] = resolve_id('state_repair', client.get_state_repairs)
+            obj['type_building'] = resolve_id('type_building', client.get_type_buildings)
+            obj['destination'] = resolve_id('destination', client.get_destinations)
+            obj['sourse'] = resolve_id('sourse', client.get_sources)
+
+            # address: dict bo'lsa full_address ni olish
+            address = obj.get('address', '')
+            if isinstance(address, dict):
+                obj['address_display'] = address.get('full_address') or address.get('name', '')
+            elif isinstance(address, int):
+                addr_data = client.get_addresses()
+                if addr_data and 'results' in addr_data:
+                    for a in addr_data['results']:
+                        if a['id'] == address:
+                            obj['address_display'] = a.get('full_address') or a.get('name', str(address))
+                            break
+                if not obj.get('address_display'):
+                    obj['address_display'] = str(address)
+            else:
+                obj['address_display'] = str(address) if address else ''
+
+            # user: int bo'lsa to'liq ma'lumot olish
+            user_id = obj.get('user')
+            if isinstance(user_id, int):
+                try:
+                    user_data = client.get_user(user_id)
+                    if user_data and 'id' in user_data:
+                        obj['user_detail'] = user_data
+                except Exception:
+                    pass
+
+            # team: int bo'lsa to'liq ma'lumot olish
+            team_id = obj.get('team')
+            if isinstance(team_id, int):
+                try:
+                    team_data = client.get_team(team_id)
+                    if team_data and 'id' in team_data:
+                        obj['team_detail'] = team_data
+                except Exception:
+                    pass
+
+            # embedding mavjudligini belgilash
+            obj['has_embedding'] = bool(obj.get('embedding'))
 
         # Bu obyekt uchun mavjud tahlilni qidirish
         analysis = PropertyPriceAnalysis.objects.filter(
@@ -136,6 +196,7 @@ def crm_object_detail(request, object_id):
         'obj': obj,
         'analysis': analysis,
         'error_message': error_message,
+        'price_per_m2': round(obj['price_starting'] / obj['total_area'], 0) if obj and obj.get('price_starting') and obj.get('total_area') else 0,
     }
     return render(request, 'market_analys/crm_object_detail.html', context)
 

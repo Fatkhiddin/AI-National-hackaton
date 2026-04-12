@@ -116,12 +116,20 @@ class PriceAnalyzerAPI:
         if not all([etaj, xonalar, maydon, narx]):
             return None
 
-        # Qurilish turi
-        building_name = (prop.get('type_building', '') or '').lower()
+        # Qurilish turi (str, dict yoki int bo'lishi mumkin)
+        raw_building = prop.get('type_building', '') or ''
+        if isinstance(raw_building, dict):
+            building_name = raw_building.get('name', '').lower()
+        else:
+            building_name = str(raw_building).lower()
         qurilish_turi = BUILDING_TYPE_MAP.get(building_name, 'gishtli')
 
-        # Holat
-        repair_name = (prop.get('state_repair', '') or '').lower()
+        # Holat (str, dict yoki int bo'lishi mumkin)
+        raw_repair = prop.get('state_repair', '') or ''
+        if isinstance(raw_repair, dict):
+            repair_name = raw_repair.get('name', '').lower()
+        else:
+            repair_name = str(raw_repair).lower()
         holat = 'remontsiz'
         if any(k in repair_name for k in ["ta'mir", 'yaxshi', 'euro', 'dizayn', 'ремонт', 'evro']):
             holat = 'remontli'
@@ -309,12 +317,20 @@ class PriceAnalyzerAPI:
         if not all([etaj, xonalar, maydon, narx]):
             return None
 
-        # Qurilish turi
-        building_name = (prop.get('type_building', '') or '').lower()
+        # Qurilish turi (str, dict yoki int bo'lishi mumkin)
+        raw_building = prop.get('type_building', '') or ''
+        if isinstance(raw_building, dict):
+            building_name = raw_building.get('name', '').lower()
+        else:
+            building_name = str(raw_building).lower()
         qurilish_turi = BUILDING_TYPE_MAP.get(building_name, 'gishtli')
 
-        # Holat
-        repair_name = (prop.get('state_repair', '') or '').lower()
+        # Holat (str, dict yoki int bo'lishi mumkin)
+        raw_repair = prop.get('state_repair', '') or ''
+        if isinstance(raw_repair, dict):
+            repair_name = raw_repair.get('name', '').lower()
+        else:
+            repair_name = str(raw_repair).lower()
         holat = 'remontsiz'
         if any(k in repair_name for k in ["ta'mir", 'yaxshi', 'euro', 'dizayn', 'ремонт', 'evro']):
             holat = 'remontli'

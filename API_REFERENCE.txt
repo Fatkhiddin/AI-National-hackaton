@@ -17,6 +17,8 @@ MUNDARIJA
   2. FOYDALANUVCHI BILAN ISHLASH
      2.1 Saqlangan obyektlar (toggle)
      2.2 Saqlangan obyektlar ro'yxati
+     2.3 Foydalanuvchilar ro'yxati (/api/users/)
+     2.4 Jamoalar (/api/teams/)
 
   3. KO'CHMAS MULK OBYEKTLARI (BuildHouse)
      3.1 Ro'yxat va qidiruv
@@ -653,6 +655,11 @@ new_token = r.json()["access"]
   GET   | /api/me/                              | JWT  | O'z profili
   POST  | /api/user/saved-object/<id>/          | JWT  | Saqlash/o'chirish (toggle)
   GET   | /api/user/saved-objects/              | JWT  | Saqlangan obyektlar
+  ──────────────────────────────────────────────────────────────────────────────
+  GET   | /api/users/                           | JWT  | Jamoadagi foydalanuvchilar
+  GET   | /api/users/<id>/                      | JWT  | Bitta foydalanuvchi
+  GET   | /api/teams/                           | JWT  | O'z jamoasi
+  GET   | /api/teams/<id>/                      | JWT  | Bitta jamoa
   ──────────────────────────────────────────────────────────────────────────────
   GET   | /api/objects/                         | Opt* | Obyektlar ro'yxati
   GET   | /api/objects/<id>/                    | Opt* | Bitta obyekt
