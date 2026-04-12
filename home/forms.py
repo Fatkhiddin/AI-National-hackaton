@@ -1,5 +1,5 @@
 from django import forms
-from .models import CRMConfiguration
+from .models import CRMConfiguration, AIConfiguration
 
 
 class CRMConfigurationForm(forms.ModelForm):
@@ -25,6 +25,33 @@ class CRMConfigurationForm(forms.ModelForm):
             'username': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'CRM foydalanuvchi nomi'
+            }),
+        }
+
+
+class AIConfigurationForm(forms.ModelForm):
+    """
+    AI Konfiguratsiya formi frontend uchun
+    """
+    api_key = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'sk-ant-... yoki sk-...'
+        }),
+        help_text="API kaliti xavfsiz saqlanadi",
+        required=False
+    )
+
+    class Meta:
+        model = AIConfiguration
+        fields = ('provider', 'api_key', 'model')
+        widgets = {
+            'provider': forms.Select(attrs={
+                'class': 'form-control',
+            }),
+            'model': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'claude-sonnet-4-20250514'
             }),
         }
 

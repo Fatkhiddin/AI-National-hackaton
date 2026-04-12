@@ -163,3 +163,56 @@ class CRMConfiguration(models.Model):
         """
         config, created = CRMConfiguration.objects.get_or_create(id=1)
         return config
+
+
+class AIConfiguration(models.Model):
+    """
+    AI API konfiguratsiyasi (Anthropic Claude / OpenAI)
+    """
+    AI_PROVIDER_CHOICES = [
+        ('anthropic', 'Anthropic (Claude)'),
+        ('openai', 'OpenAI (GPT)'),
+    ]
+
+    provider = models.CharField(
+        max_length=20,
+        verbose_name="AI Provider",
+        choices=AI_PROVIDER_CHOICES,
+        default="anthropic"
+    )
+    api_key = models.CharField(
+        max_length=255,
+        verbose_name="API Key",
+        help_text="Anthropic yoki OpenAI API kaliti",
+        blank=True,
+        default=""
+    )
+    model = models.CharField(
+        max_length=100,
+        verbose_name="AI Model",
+        default="claude-sonnet-4-20250514",
+        help_text="Masalan: claude-sonnet-4-20250514, gpt-4o"
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = "AI Configuration"
+        verbose_name_plural = "AI Configurations"
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        provider_name = dict(self.AI_PROVIDER_CHOICES).get(self.provider, self.provider)
+        return f"{provider_name} - {'Sozlangan' if self.api_key else 'Sozlanmagan'}"
+
+    @staticmethod
+    def get_config():
+        """
+        Yangi yoki mavjud AI konfiguratsiyasini olish
+        """
+        config, created = AIConfiguration.objects.get_or_create(id=1)
+        return config

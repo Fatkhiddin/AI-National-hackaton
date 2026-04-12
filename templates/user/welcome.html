@@ -1,452 +1,305 @@
 {% extends 'base.html' %}
 
-{% block title %}Welcome to RoofAI - RoofAI{% endblock %}
+{% block title %}RoofAI — Aqlli Ko'chmas Mulk Platformasi{% endblock %}
 
 {% block extra_css %}
 <style>
-    body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
+    /* Animated gradient mesh background — inside main content */
+    .bg-mesh {
+        position: fixed; top: 0; left: var(--sidebar-w, 260px); right: 0; height: 100%;
+        z-index: 0; overflow: hidden; pointer-events: none;
     }
-    
-    body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="rgba(255,255,255,0.05)"><path d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></g></g></svg>');
-        pointer-events: none;
-        z-index: 0;
+    @media (max-width: 992px) { .bg-mesh { left: 0; } }
+    .bg-mesh .orb {
+        position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4;
+        animation: orbFloat 8s ease-in-out infinite;
     }
-    
-    .welcome-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: calc(100vh - 80px);
-        padding: 40px 20px;
-        position: relative;
-        z-index: 1;
+    .bg-mesh .orb:nth-child(1) { width: 500px; height: 500px; background: #6366f1; top: -10%; left: -5%; animation-delay: 0s; }
+    .bg-mesh .orb:nth-child(2) { width: 400px; height: 400px; background: #a855f7; top: 50%; right: -10%; animation-delay: 2s; }
+    .bg-mesh .orb:nth-child(3) { width: 350px; height: 350px; background: #3b82f6; bottom: -10%; left: 30%; animation-delay: 4s; }
+    .bg-mesh .orb:nth-child(4) { width: 300px; height: 300px; background: #ec4899; top: 20%; left: 60%; animation-delay: 6s; opacity: 0.25; }
+
+    @keyframes orbFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(30px, -40px) scale(1.05); }
+        66% { transform: translate(-20px, 20px) scale(0.95); }
     }
-    
-    .welcome-hero {
-        text-align: center;
-        color: white;
-        margin-bottom: 60px;
-        animation: slideInDown 0.8s ease-out;
+
+    .page-wrapper {
+        position: relative; z-index: 1;
+        max-width: 1100px; margin: 0 auto; padding: 10px 20px 60px;
     }
-    
-    @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-40px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+
+    /* Hero */
+    .hero {
+        text-align: center; padding: 30px 0 25px; color: white;
+        animation: fadeIn 1s ease;
     }
-    
-    .welcome-icon {
-        font-size: 6rem;
-        margin-bottom: 20px;
-        animation: float 3s ease-in-out infinite;
-        display: inline-block;
-        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hero-logo {
+        font-size: 4.5rem; display: inline-block; margin-bottom: 10px;
+        animation: pulse 2.5s ease-in-out infinite;
+        filter: drop-shadow(0 0 40px rgba(99, 102, 241, 0.6));
     }
-    
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0px);
-        }
-        50% {
-            transform: translateY(-30px);
-        }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
     }
-    
-    .welcome-title {
-        font-size: 4rem;
-        font-weight: 800;
-        margin-bottom: 10px;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        letter-spacing: -1px;
+
+    .hero h1 {
+        font-size: 3.5rem; font-weight: 900; letter-spacing: -2px;
+        background: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #818cf8 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text; margin-bottom: 8px;
     }
-    
-    .welcome-subtitle {
-        font-size: 1.4rem;
-        opacity: 0.95;
-        margin-bottom: 0;
-        font-weight: 300;
+    .hero p {
+        font-size: 1.15rem; color: rgba(255,255,255,0.7); font-weight: 400;
         letter-spacing: 0.5px;
     }
-    
-    .features-section {
-        width: 100%;
-        max-width: 1200px;
-        margin-bottom: 40px;
+
+    /* CRM Status Bar */
+    .crm-bar {
+        display: flex; align-items: center; justify-content: center; gap: 16px;
+        margin: 25px auto 0; padding: 12px 28px; border-radius: 50px;
+        background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.1); width: fit-content;
     }
-    
-    .features-title {
-        color: white;
-        text-align: center;
-        font-size: 1.3rem;
-        margin-bottom: 30px;
-        opacity: 0.95;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 2px;
+    .crm-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .crm-dot.on { background: #22c55e; box-shadow: 0 0 12px #22c55e; animation: blink 2s infinite; }
+    .crm-dot.off { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .crm-bar span { color: rgba(255,255,255,0.85); font-size: 0.9rem; font-weight: 600; }
+
+    /* Navigation Cards */
+    .nav-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px; margin-top: 50px;
     }
-    
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 25px;
-        margin-bottom: 40px;
+    .nav-card {
+        background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+        padding: 32px 28px; text-decoration: none; color: white;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative; overflow: hidden;
     }
-    
-    .feature-card {
-        background: white;
-        border-radius: 16px;
-        padding: 30px 25px;
-        text-align: center;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        cursor: pointer;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        animation: fadeInUp 0.6s ease-out;
-        animation-fill-mode: both;
-        position: relative;
-        overflow: hidden;
+    .nav-card::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(135deg, var(--card-accent) 0%, transparent 60%);
+        opacity: 0; transition: opacity 0.4s;
     }
-    
-    .feature-card:nth-child(1) { animation-delay: 0.1s; }
-    .feature-card:nth-child(2) { animation-delay: 0.2s; }
-    .feature-card:nth-child(3) { animation-delay: 0.3s; }
-    .feature-card:nth-child(4) { animation-delay: 0.4s; }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .nav-card:hover::before { opacity: 0.15; }
+    .nav-card:hover {
+        transform: translateY(-10px); color: white; text-decoration: none;
+        border-color: var(--card-accent);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 30px color-mix(in srgb, var(--card-accent) 30%, transparent);
     }
-    
-    .feature-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
+    .nav-card .card-icon {
+        font-size: 3rem; margin-bottom: 16px; display: inline-block;
+        transition: transform 0.3s;
     }
-    
-    .feature-card:hover::before {
-        left: 100%;
+    .nav-card:hover .card-icon { transform: scale(1.15) rotate(-5deg); }
+    .nav-card h3 { font-size: 1.35rem; font-weight: 700; margin-bottom: 8px; }
+    .nav-card .card-desc {
+        font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.5; margin-bottom: 16px;
     }
-    
-    .feature-card:hover {
-        transform: translateY(-15px);
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-        background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+    .nav-card .card-tag {
+        display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem;
+        font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+        background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
     }
-    
-    .feature-icon {
-        font-size: 3.5rem;
-        margin-bottom: 15px;
-        display: inline-block;
-        transition: transform 0.3s ease;
+
+    /* User Section */
+    .user-section {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px;
     }
-    
-    .feature-card:hover .feature-icon {
-        transform: scale(1.2) rotate(5deg);
+    .glass-card {
+        background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+        padding: 28px;
     }
-    
-    .feature-text {
-        font-size: 1.1rem;
-        color: #374151;
-        font-weight: 600;
-        margin: 0;
+    .glass-card h3 { color: white; font-size: 1.2rem; font-weight: 700; margin-bottom: 18px; }
+    .user-row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .user-row:last-child { border: none; }
+    .user-row .lbl { color: rgba(255,255,255,0.5); font-size: 0.9rem; min-width: 110px; }
+    .user-row .val { color: white; font-weight: 600; font-size: 0.95rem; }
+    .role-chip {
+        display: inline-block; background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white; padding: 4px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
     }
-    
-    .welcome-card {
-        background: white;
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
-        max-width: 700px;
-        width: 100%;
-        animation: slideInUp 0.8s ease-out;
+
+    /* Quick Actions */
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+    .q-btn {
+        padding: 10px 22px; border-radius: 12px; text-decoration: none;
+        font-weight: 700; font-size: 0.9rem; transition: all 0.3s;
+        display: inline-flex; align-items: center; gap: 8px;
     }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(40px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .q-btn.primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
     }
-    
-    .welcome-message {
-        color: #6b7280;
-        font-size: 1rem;
-        margin-bottom: 25px;
-        line-height: 1.6;
+    .q-btn.primary:hover {
+        transform: translateY(-3px); box-shadow: 0 10px 30px rgba(99,102,241,0.4);
+        color: white; text-decoration: none;
     }
-    
-    .user-info {
-        background: linear-gradient(135deg, #f0f4ff 0%, #f9f5ff 100%);
-        padding: 25px;
-        border-radius: 14px;
-        margin: 25px 0;
-        text-align: left;
-        border-left: 4px solid #667eea;
+    .q-btn.ghost {
+        background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8);
+        border: 1px solid rgba(255,255,255,0.15);
     }
-    
-    .user-info p {
-        margin: 10px 0;
-        color: #374151;
-        font-size: 0.95rem;
+    .q-btn.ghost:hover {
+        background: rgba(255,255,255,0.15); color: white; text-decoration: none;
+        transform: translateY(-3px);
     }
-    
-    .user-info strong {
-        color: #667eea;
-        font-weight: 600;
+    .q-btn.danger {
+        background: rgba(239,68,68,0.15); color: #fca5a5;
+        border: 1px solid rgba(239,68,68,0.2);
     }
-    
-    .role-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-top: 5px;
+    .q-btn.danger:hover { background: rgba(239,68,68,0.25); color: #fca5a5; text-decoration: none; }
+
+    /* Footer */
+    .footer-bar {
+        text-align: center; margin-top: 60px; padding: 20px;
+        color: rgba(255,255,255,0.3); font-size: 0.8rem;
     }
-    
-    .welcome-buttons {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 30px;
-    }
-    
-    .btn-welcome {
-        padding: 14px 32px;
-        font-weight: 700;
-        border-radius: 10px;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        border: none;
-    }
-    
-    .btn-welcome.primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-welcome.primary:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .btn-welcome.secondary {
-        background: white;
-        color: #667eea;
-        border: 2px solid #667eea;
-    }
-    
-    .btn-welcome.secondary:hover {
-        background: #f0f4ff;
-        color: #667eea;
-        text-decoration: none;
-        transform: translateY(-4px);
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
-    }
-    
-    .crm-status {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        padding: 15px 20px;
-        border-radius: 10px;
-        margin-top: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border: 1px solid rgba(102, 126, 234, 0.2);
-    }
-    
-    .crm-status-text {
-        font-size: 0.9rem;
-        color: #374151;
-    }
-    
-    .crm-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 700;
-    }
-    
-    .crm-badge.connected {
-        background: #d1fae5;
-        color: #065f46;
-    }
-    
-    .crm-badge.disconnected {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-    
+    .footer-bar a { color: rgba(255,255,255,0.5); text-decoration: none; }
+
+    /* Responsive */
     @media (max-width: 768px) {
-        .welcome-title {
-            font-size: 2.5rem;
-        }
-        
-        .welcome-subtitle {
-            font-size: 1.1rem;
-        }
-        
-        .welcome-icon {
-            font-size: 4rem;
-        }
-        
-        .features-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .feature-card {
-            padding: 20px 15px;
-        }
-        
-        .feature-icon {
-            font-size: 2.5rem;
-        }
-        
-        .welcome-card {
-            padding: 25px;
-        }
+        .hero h1 { font-size: 2.5rem; }
+        .hero-logo { font-size: 3.5rem; }
+        .nav-grid { grid-template-columns: 1fr; }
+        .user-section { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="welcome-container">
-    <!-- Hero Section -->
-    <div class="welcome-hero">
-        <div class="welcome-icon">🏢</div>
-        <h1 class="welcome-title">{{ app_name }}</h1>
-        <p class="welcome-subtitle">✨ AI National Hackaton Platform</p>
-    </div>
+<!-- Animated background -->
+<div class="bg-mesh">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+</div>
 
-    <!-- Features Grid -->
-    <div class="features-section">
-        <div class="features-title">Platform Features</div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <p class="feature-text">Market Analysis</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">👥</div>
-                <p class="feature-text">Operators</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <p class="feature-text">Telegram AI</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚙️</div>
-                <p class="feature-text">Settings</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Card -->
-    <div class="welcome-card">
-        <p class="welcome-message">
-            👋 Welcome to <strong>RoofAI</strong>! You are now successfully logged in. 
-            Let's explore amazing features and build something incredible together.
-        </p>
-        
-        <div class="user-info">
-            <p><strong>👤 Username:</strong> {{ user.username }}</p>
-            <p><strong>📧 Email:</strong> {{ user.email }}</p>
-            <p><strong>👨‍💼 Full Name:</strong> {{ user.first_name|default:"—" }} {{ user.last_name|default:"" }}</p>
-            <p><strong>🎖️ Role:</strong> <span class="role-badge">{{ user.role|capfirst }}</span></p>
-        </div>
+<div class="page-wrapper">
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-logo">🏢</div>
+        <h1>{{ app_name }}</h1>
+        <p>Ko'chmas mulk bozori uchun aqlli AI platforma</p>
 
         <!-- CRM Status -->
-        <div class="crm-status">
-            <span class="crm-status-text">🔌 CRM Connection Status:</span>
-            <span class="crm-badge disconnected" id="crm-status-badge">⚠️ Not Configured</span>
+        <div class="crm-bar">
+            <span class="crm-dot off" id="crm-dot"></span>
+            <span id="crm-label">CRM: Tekshirilmoqda...</span>
         </div>
-        
-        <div class="welcome-buttons">
-            <a href="{% url 'home:crm_settings' %}" class="btn-welcome primary">
-                ⚙️ CRM Settings
-            </a>
-            <a href="{% url 'operators_analys:ip_calls' %}" class="btn-welcome primary">
-                📞 IP Calls
-            </a>
-            <a href="{% url 'user:logout' %}" class="btn-welcome secondary">
-                🚪 Logout
-            </a>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="nav-grid">
+        <a href="{% url 'market_analys:dashboard' %}" class="nav-card" style="--card-accent: #6366f1;">
+            <div class="card-icon">📊</div>
+            <h3>Market Analiz</h3>
+            <p class="card-desc">CRM obyektlarini AI yordamida narx tahlili. Bozor narxlari bilan solishtirish va prognoz.</p>
+            <span class="card-tag">AI Powered</span>
+        </a>
+
+        <a href="{% url 'operators_analys:ip_calls' %}" class="nav-card" style="--card-accent: #22c55e;">
+            <div class="card-icon">📞</div>
+            <h3>IP Telefoniya</h3>
+            <p class="card-desc">Qo'ng'iroqlar monitoringi, operator samaradorligi va audio yozuvlar tahlili.</p>
+            <span class="card-tag">Real-time</span>
+        </a>
+
+        <a href="{% url 'market_analys:crm_objects' %}" class="nav-card" style="--card-accent: #3b82f6;">
+            <div class="card-icon">🏢</div>
+            <h3>CRM Obyektlar</h3>
+            <p class="card-desc">Barcha ko'chmas mulk obyektlarini ko'rish, qidirish va filterlash. CRM API integratsiya.</p>
+            <span class="card-tag">CRM API</span>
+        </a>
+
+        <a href="{% url 'market_analys:analyze_property' %}" class="nav-card" style="--card-accent: #a855f7;">
+            <div class="card-icon">🤖</div>
+            <h3>AI Narx Tahlili</h3>
+            <p class="card-desc">Har qanday obyektni sun'iy intellekt bilan tahlil qiling. Bozor narxi va prognoz.</p>
+            <span class="card-tag">Claude AI</span>
+        </a>
+
+        <a href="{% url 'market_analys:market_prices' %}" class="nav-card" style="--card-accent: #f59e0b;">
+            <div class="card-icon">💰</div>
+            <h3>Bozor Narxlari</h3>
+            <p class="card-desc">Qurilish turlari, qavatlar va xonalar bo'yicha bozor narxlari ma'lumotnomasi.</p>
+            <span class="card-tag">Ma'lumotnoma</span>
+        </a>
+
+        <a href="{% url 'home:crm_settings' %}" class="nav-card" style="--card-accent: #64748b;">
+            <div class="card-icon">⚙️</div>
+            <h3>CRM Sozlamalar</h3>
+            <p class="card-desc">CRM ulanishini sozlash, API kalitlari va token boshqaruvi.</p>
+            <span class="card-tag">Sozlamalar</span>
+        </a>
+    </div>
+
+    <!-- User + Quick Actions -->
+    <div class="user-section">
+        <div class="glass-card">
+            <h3>👤 Profil Ma'lumotlari</h3>
+            <div class="user-row">
+                <span class="lbl">Foydalanuvchi:</span>
+                <span class="val">{{ user.username }}</span>
+            </div>
+            <div class="user-row">
+                <span class="lbl">To'liq ism:</span>
+                <span class="val">{{ user.first_name|default:"—" }} {{ user.last_name|default:"" }}</span>
+            </div>
+            <div class="user-row">
+                <span class="lbl">Email:</span>
+                <span class="val">{{ user.email|default:"—" }}</span>
+            </div>
+            <div class="user-row">
+                <span class="lbl">Roli:</span>
+                <span class="val"><span class="role-chip">{{ user.role|default:"User"|capfirst }}</span></span>
+            </div>
         </div>
+
+        <div class="glass-card">
+            <h3>⚡ Tezkor Amallar</h3>
+            <div class="quick-actions">
+                <a href="{% url 'market_analys:dashboard' %}" class="q-btn primary">📊 Dashboard</a>
+                <a href="{% url 'market_analys:analysis_results' %}" class="q-btn primary">📋 Natijalar</a>
+                <a href="{% url 'operators_analys:ip_calls' %}" class="q-btn ghost">📞 Qo'ng'iroqlar</a>
+                <a href="{% url 'home:crm_settings' %}" class="q-btn ghost">⚙️ Sozlamalar</a>
+                <a href="{% url 'user:logout' %}" class="q-btn danger">🚪 Chiqish</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bar">
+        RoofAI &copy; 2026 — AI National Hackaton Platform
     </div>
 </div>
 
 <script>
-// CRM status ni check qilish
 document.addEventListener('DOMContentLoaded', function() {
-    fetch('{% url "home:crm_status" %}')
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.getElementById('crm-status-badge');
-            if (data.is_connected) {
-                badge.textContent = '✅ Connected';
-                badge.className = 'crm-badge connected';
-            } else {
-                badge.textContent = '❌ Disconnected';
-                badge.className = 'crm-badge disconnected';
-            }
-        })
-        .catch(err => console.log('CRM status check failed'));
-});
+    const dot = document.getElementById('crm-dot');
+    const label = document.getElementById('crm-label');
 
-// Auto refresh every 30 seconds
-setInterval(() => {
     fetch('{% url "home:crm_status" %}')
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            const badge = document.getElementById('crm-status-badge');
             if (data.is_connected) {
-                badge.textContent = '✅ Connected';
-                badge.className = 'crm-badge connected';
+                dot.className = 'crm-dot on';
+                label.textContent = 'CRM: Ulangan ✓';
+            } else {
+                dot.className = 'crm-dot off';
+                label.textContent = 'CRM: Ulanmagan';
             }
         })
-        .catch(err => {});
-}, 30000);
+        .catch(() => {
+            dot.className = 'crm-dot off';
+            label.textContent = 'CRM: Tekshirib bo\'lmadi';
+        });
+});
 </script>
 {% endblock %}

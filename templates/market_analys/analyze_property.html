@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Narx Tahlili - Market Analiz{% endblock %}
+{% block page_title %}🤖 AI Narx Tahlili{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analyze-container { padding: 0; }
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);
+    }
+    .section-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-primary); font-weight: 800; }
+
+    .analyze-form {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 28px; margin-bottom: 28px; max-width: 600px;
+    }
+    .analyze-form h3 { margin: 0 0 20px; color: var(--text-primary); font-weight: 700; }
+    .form-hint { font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px; }
+
+    .result-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 28px; border-left: 4px solid;
+    }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .result-header h3 { color: var(--text-primary); font-weight: 700; }
+    .status-badge { display: inline-block; padding: 8px 22px; border-radius: 20px; font-weight: 700; font-size: 1.1rem; color: white; }
+    .result-stats {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px; margin-bottom: 20px;
+    }
+    .result-stat {
+        background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; text-align: center;
+    }
+    .result-stat .value { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    .result-stat .label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+    .result-stat .value { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    .result-stat .label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; }
+
+    .property-info {
+        background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15);
+        border-radius: 12px; padding: 20px; margin-bottom: 20px;
+    }
+    .property-info h4 { margin: 0 0 12px; color: var(--accent-light); font-weight: 700; }
+    .property-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;
+    }
+    .property-grid .item { font-size: 0.88rem; color: var(--text-secondary); }
+    .property-grid .item strong { color: var(--text-primary); }
+
+    .ai-text { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); border-radius: 12px; padding: 16px; margin-top: 16px; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-primary); }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px; color: #fca5a5; margin-bottom: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analyze-container">
+    <div class="section-header">
+        <h2>🤖 AI Narx Tahlili</h2>
+        <a href="{% url 'market_analys:dashboard' %}" class="btn btn-outline-primary">← Dashboard</a>
+    </div>
+
+    {% if error_message %}
+    <div class="error-box">⚠️ {{ error_message }}</div>
+    {% endif %}
+
+    <!-- Analyze Form -->
+    <div class="analyze-form">
+        <h3>🔍 Obyektni Tahlil Qilish</h3>
+        <form method="post" action="{% url 'market_analys:analyze_property' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="property_id" class="form-label fw-bold">Obyekt ID (CRM):</label>
+                <input type="number" name="property_id" id="property_id" class="form-control"
+                       placeholder="Masalan: 12345" required min="1"
+                       value="{{ property_data.id|default:'' }}">
+                <div class="form-hint">CRM dagi BuildHouse obyekt ID raqamini kiriting</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">🤖 Tahlil Qilish</button>
+        </form>
+    </div>
+
+    <!-- Property Data -->
+    {% if property_data %}
+    <div class="property-info">
+        <h4>🏢 Obyekt Ma'lumotlari (CRM #{{ property_data.id }})</h4>
+        <div class="property-grid">
+            <div class="item"><strong>Xonalar:</strong> {{ property_data.rooms_numbers|default:"—" }}</div>
+            <div class="item"><strong>Umumiy maydon:</strong> {{ property_data.general_area|default:"—" }} m²</div>
+            <div class="item"><strong>Qavat:</strong> {{ property_data.floor|default:"—" }} / {{ property_data.number_of_floors|default:"—" }}</div>
+            <div class="item"><strong>Narx ($):</strong> {{ property_data.price_usd|default:"—" }}</div>
+            {% if property_data.state_repair %}
+            <div class="item"><strong>Ta'mir:</strong> {{ property_data.state_repair }}</div>
+            {% endif %}
+            {% if property_data.type_building %}
+            <div class="item"><strong>Qurilish:</strong> {{ property_data.type_building }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Analysis Result -->
+    {% if analysis %}
+    <div class="result-card" style="border-color: {{ analysis.get_status_color }};">
+        <div class="result-header">
+            <h3>📊 Tahlil Natijasi</h3>
+            <span class="status-badge" style="background: {{ analysis.get_status_color }};">
+                {{ analysis.get_status_display }}
+            </span>
+        </div>
+
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="value">${{ analysis.bozor_narxi|floatformat:0 }}</div>
+                <div class="label">Bozor narxi ($/m²)</div>
+            </div>
+            <div class="result-stat">
+                <div class="value">${{ analysis.joriy_narxi|floatformat:0 }}</div>
+                <div class="label">Joriy narx ($/m²)</div>
+            </div>
+            <div class="result-stat">
+                <div class="value">{{ analysis.farq_foiz|floatformat:1 }}%</div>
+                <div class="label">Farq</div>
+            </div>
+            <div class="result-stat">
+                <div class="value">${{ analysis.farq_summa|floatformat:0 }}</div>
+                <div class="label">Farq (USD)</div>
+            </div>
+            <div class="result-stat">
+                <div class="value">{{ analysis.confidence_score|floatformat:0 }}%</div>
+                <div class="label">Ishonch darajasi</div>
+            </div>
+        </div>
+
+        {% if analysis.ai_tahlil %}
+        <div class="ai-text"><strong>🤖 AI Tahlil:</strong><br>{{ analysis.ai_tahlil }}</div>
+        {% endif %}
+        {% if analysis.tavsiya %}
+        <div class="ai-text" style="background: #f0fdf4;"><strong>💡 Tavsiya:</strong><br>{{ analysis.tavsiya }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

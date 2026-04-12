@@ -23,5 +23,6 @@ urlpatterns = [
     path('auth/', include('user.urls')),
     path('home/', include('home.urls')),
     path('operators/', include('operators_analys.urls')),
+    path('market/', include('market_analys.urls')),
     path('', welcome_view, name='welcome'),
 ]

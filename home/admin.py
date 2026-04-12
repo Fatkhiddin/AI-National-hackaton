@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html, mark_safe
-from .models import CRMConfiguration
+from .models import CRMConfiguration, AIConfiguration
 
 
 @admin.register(CRMConfiguration)
@@ -101,3 +101,25 @@ class CRMConfigurationAdmin(admin.ModelAdmin):
                 level='success' if success else 'error'
             )
     test_crm_connection.short_description = "CRM ulanishini tekshirish"
+
+
+@admin.register(AIConfiguration)
+class AIConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('provider', 'model', 'status_badge', 'updated_at')
+    fieldsets = (
+        ('AI Sozlamalari', {
+            'fields': ('provider', 'api_key', 'model')
+        }),
+    )
+
+    def status_badge(self, obj):
+        if obj.api_key:
+            return format_html('<span style="color: green; font-weight: bold;">● Sozlangan</span>')
+        return format_html('<span style="color: red; font-weight: bold;">● Sozlanmagan</span>')
+    status_badge.short_description = "Holat"
+
+    def has_add_permission(self, request):
+        return not AIConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

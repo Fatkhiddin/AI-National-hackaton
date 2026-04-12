@@ -5,101 +5,36 @@
 {% block extra_css %}
 <style>
     .register-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 20px;
+        display: flex; align-items: center; justify-content: center;
+        min-height: 100vh; padding: 20px;
     }
-    
     .register-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        padding: 40px;
-        width: 100%;
-        max-width: 500px;
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 40px; width: 100%; max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    
-    .register-header {
-        text-align: center;
-        margin-bottom: 30px;
-    }
-    
-    .register-header h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #667eea;
-        margin-bottom: 10px;
-    }
-    
-    .register-header p {
-        color: #6b7280;
-        font-size: 0.95rem;
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-group label {
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 8px;
-        display: block;
-    }
-    
+    .register-header { text-align: center; margin-bottom: 30px; }
+    .register-header h1 { font-size: 2.5rem; font-weight: 700; color: var(--accent-light); margin-bottom: 10px; }
+    .register-header p { color: var(--text-secondary); font-size: 0.95rem; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block; }
     .btn-register {
-        width: 100%;
-        padding: 12px;
-        font-weight: 600;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        margin-top: 10px;
+        width: 100%; padding: 12px; font-weight: 600; border-radius: 8px;
+        transition: all 0.3s ease; margin-top: 10px;
     }
-    
-    .register-footer {
-        text-align: center;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #e5e7eb;
-    }
-    
-    .register-footer a {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 600;
-    }
-    
-    .register-footer a:hover {
-        text-decoration: underline;
-    }
-    
-    .helptext {
-        display: block;
-        font-size: 0.85rem;
-        color: #6b7280;
-        margin-top: 5px;
-    }
-    
+    .register-footer { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+    .register-footer a { color: var(--accent-light); text-decoration: none; font-weight: 600; }
+    .register-footer a:hover { text-decoration: underline; }
+    .helptext { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px; }
     .errorlist {
-        list-style: none;
-        padding: 10px;
-        background-color: #fee;
-        border-left: 4px solid #f66;
-        border-radius: 4px;
-        margin-bottom: 10px;
-        color: #c33;
+        list-style: none; padding: 10px; background: rgba(239,68,68,0.1);
+        border-left: 4px solid #ef4444; border-radius: 6px; margin-bottom: 10px; color: #fca5a5;
     }
-    
-    ul {
-        margin: 0;
-        padding: 0;
-    }
+    ul { margin: 0; padding: 0; }
 </style>
 {% endblock %}
 
-{% block content %}
+{% block content_unauth %}
 <div class="register-container">
     <div class="register-card">
         <div class="register-header">
@@ -178,4 +113,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock content_unauth %}

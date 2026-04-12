@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Sozlamalari - RoofAI{% endblock %}
+{% block page_title %}🤖 AI Sozlamalar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container { max-width: 800px; margin: 20px auto; padding: 0; }
+    .settings-header { text-align: center; margin-bottom: 30px; }
+    .settings-header h1 { font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; }
+    .settings-header p { color: var(--text-secondary); font-size: 1rem; }
+
+    .settings-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 28px; margin-bottom: 20px;
+    }
+
+    .form-group-custom { margin-bottom: 22px; }
+    .form-group-custom label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
+    .form-group-custom input,
+    .form-group-custom select {
+        width: 100%; padding: 12px 15px; background: var(--bg-secondary);
+        border: 1px solid var(--border-color); border-radius: 10px;
+        font-size: 1rem; color: var(--text-primary); transition: all 0.3s ease;
+    }
+    .form-group-custom input:focus,
+    .form-group-custom select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .form-group-custom select option { background: var(--bg-secondary); color: var(--text-primary); }
+    .form-helptext { display: block; margin-top: 5px; font-size: 0.85rem; color: var(--text-secondary); }
+
+    .status-section {
+        background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; margin-bottom: 20px;
+    }
+    .status-section h3 { margin: 0 0 15px 0; color: var(--text-primary); font-size: 1rem; font-weight: 600; }
+    .status-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+    .status-item:last-child { border-bottom: none; }
+    .status-label { color: var(--text-secondary); font-weight: 500; }
+    .status-value { color: var(--text-primary); font-weight: 600; }
+    .status-connected { color: #86efac; }
+    .status-disconnected { color: #fca5a5; }
+
+    .button-group { display: flex; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
+    .btn-save {
+        flex: 1; min-width: 150px; padding: 12px 20px;
+        background: linear-gradient(135deg, var(--accent), #818cf8); color: white;
+        border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+    }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.3); }
+    .btn-test {
+        flex: 1; min-width: 150px; padding: 12px 20px;
+        background: transparent; color: var(--accent-light);
+        border: 2px solid var(--accent); border-radius: 10px;
+        font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+    }
+    .btn-test:hover { background: rgba(99,102,241,0.1); transform: translateY(-2px); }
+    .btn-test:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .test-result { display: none; padding: 15px; border-radius: 10px; margin-top: 15px; font-weight: 600; }
+    .test-result.success { background: rgba(34,197,94,0.1); color: #86efac; border-left: 4px solid #10b981; }
+    .test-result.error { background: rgba(239,68,68,0.1); color: #fca5a5; border-left: 4px solid #ef4444; }
+
+    .provider-info {
+        display: flex; gap: 15px; margin-top: 15px;
+    }
+    .provider-card {
+        flex: 1; padding: 15px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;
+    }
+    .provider-card:hover { border-color: var(--accent); }
+    .provider-card.active { border-color: var(--accent); background: rgba(99,102,241,0.08); }
+    .provider-card .icon { font-size: 2rem; margin-bottom: 8px; }
+    .provider-card .name { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
+    .provider-card .desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+    .error-list { list-style: none; padding: 0; margin: 10px 0 0 0; }
+    .error-list li { padding: 5px 0; color: #fca5a5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1>🤖 AI Sozlamalari</h1>
+        <p>Ko'chmas mulk tahlili uchun AI provayderini sozlang</p>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="test-result {{ message.tags }}" style="display: block; margin-bottom: 10px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Holat -->
+    <div class="settings-card">
+        <div class="status-section">
+            <h3>📊 AI Holati</h3>
+            <div class="status-item">
+                <span class="status-label">Provayder:</span>
+                <span class="status-value">{{ config.get_provider_display|default:"--" }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Model:</span>
+                <span class="status-value">{{ config.model|default:"--" }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">API Key:</span>
+                <span class="status-value" id="api-status">
+                    {% if config.api_key %}
+                    <span class="status-connected">✓ Sozlangan</span>
+                    {% else %}
+                    <span class="status-disconnected">✗ Kiritilmagan</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Oxirgi yangilash:</span>
+                <span class="status-value">{{ config.updated_at|date:"d.m.Y H:i" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sozlash Formi -->
+    <div class="settings-card">
+        <h2 style="margin: 0 0 25px 0; color: var(--text-primary); font-size: 1.3rem;">🔑 AI Ma'lumotlari</h2>
+
+        <form method="post" id="ai-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="test-result error" style="display: block; margin-bottom: 15px;">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Provider -->
+            <div class="form-group-custom">
+                <label for="{{ form.provider.id_for_label }}">AI Provayder</label>
+                {{ form.provider }}
+                {% if form.provider.errors %}
+                <div class="test-result error" style="display: block;">
+                    <ul class="error-list">{% for error in form.provider.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- API Key -->
+            <div class="form-group-custom">
+                <label for="{{ form.api_key.id_for_label }}">API Key</label>
+                {{ form.api_key }}
+                {% if form.api_key.errors %}
+                <div class="test-result error" style="display: block;">
+                    <ul class="error-list">{% for error in form.api_key.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+                <small class="form-helptext">{{ form.api_key.help_text }}</small>
+            </div>
+
+            <!-- Model -->
+            <div class="form-group-custom">
+                <label for="{{ form.model.id_for_label }}">AI Model</label>
+                {{ form.model }}
+                {% if form.model.errors %}
+                <div class="test-result error" style="display: block;">
+                    <ul class="error-list">{% for error in form.model.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+                <small class="form-helptext" id="model-hint">Anthropic: claude-sonnet-4-20250514 | OpenAI: gpt-4o</small>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button type="submit" class="btn-save">💾 Saqlash</button>
+                <button type="button" class="btn-test" id="test-btn" onclick="testAIConnection()">
+                    🧪 Ulanishni Tekshirish
+                </button>
+            </div>
+
+            <!-- Test Result -->
+            <div id="test-result" class="test-result"></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function testAIConnection() {
+    const btn = document.getElementById('test-btn');
+    const resultDiv = document.getElementById('test-result');
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Tekshirilmoqda...';
+    resultDiv.style.display = 'none';
+
+    fetch('{% url "home:ai_test_connection" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result ' + (data.success ? 'success' : 'error');
+        resultDiv.innerHTML = data.message;
+    })
+    .catch(error => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result error';
+        resultDiv.innerHTML = '✗ Xato: ' + error.message;
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🧪 Ulanishni Tekshirish';
+    });
+}
+
+// Provider o'zgarganda model hintni yangilash
+const providerSelect = document.getElementById('{{ form.provider.id_for_label }}');
+if (providerSelect) {
+    providerSelect.addEventListener('change', function() {
+        const hint = document.getElementById('model-hint');
+        if (this.value === 'anthropic') {
+            hint.textContent = 'Masalan: claude-sonnet-4-20250514, claude-3-haiku-20240307';
+        } else {
+            hint.textContent = 'Masalan: gpt-4o, gpt-4o-mini, gpt-3.5-turbo';
+        }
+    });
+}
+</script>
+{% endblock %}

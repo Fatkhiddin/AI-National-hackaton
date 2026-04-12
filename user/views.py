@@ -68,6 +68,7 @@ def logout_view(request):
     return redirect('user:login')
 
 
+@login_required(login_url='user:login')
 def welcome_view(request):
     """
     Welcome page showing 'RoofAI' after login

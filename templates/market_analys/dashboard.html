@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Market Analiz - Dashboard{% endblock %}
+{% block page_title %}📊 Market Analysis Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container { padding: 0; }
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);
+    }
+    .section-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-primary); font-weight: 800; }
+    .connection-badge { padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .connected { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+    .disconnected { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px; margin-bottom: 30px;
+    }
+    .stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 22px; text-align: center; transition: all 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-3px); background: var(--bg-card-hover); border-color: rgba(99,102,241,0.3); }
+    .stat-card .number { font-size: 2.2rem; font-weight: 800; color: var(--accent-light); }
+    .stat-card .label { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+    .status-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px; margin-bottom: 30px;
+    }
+    .status-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; text-align: center; border-left: 4px solid;
+    }
+    .status-card .count { font-size: 1.8rem; font-weight: 700; }
+    .status-card .status-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); }
+
+    .quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .quick-link {
+        display: flex; align-items: center; gap: 14px;
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 18px; text-decoration: none; color: var(--text-primary);
+        transition: all 0.3s;
+    }
+    .quick-link:hover { transform: translateY(-2px); background: var(--bg-card-hover); border-color: rgba(99,102,241,0.3); color: var(--accent-light); }
+    .quick-link .icon { font-size: 1.8rem; }
+    .quick-link .text h4 { margin: 0; font-size: 1rem; font-weight: 700; }
+    .quick-link .text p { margin: 0; font-size: 0.8rem; color: var(--text-secondary); }
+
+    .crm-objects-preview {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 24px; margin-top: 30px;
+    }
+    .crm-objects-preview h3 { margin: 0 0 15px; color: var(--text-primary); font-weight: 700; }
+    .object-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .object-row:last-child { border: none; }
+    .object-info { display: flex; gap: 12px; align-items: center; }
+    .object-id { background: rgba(99,102,241,0.15); color: var(--accent-light); padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
+    .object-price { font-weight: 700; color: #86efac; }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px; color: #fca5a5; margin-bottom: 20px; }
+    h3.section-title { color: var(--text-primary); margin-bottom: 15px; font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="section-header">
+        <h2>📊 Market Analysis Dashboard</h2>
+        <span class="connection-badge {% if crm_connected %}connected{% else %}disconnected{% endif %}">
+            {% if crm_connected %}🟢 CRM Ulangan{% else %}🔴 CRM Ulanmagan{% endif %}
+        </span>
+    </div>
+
+    {% if error_message %}
+    <div class="error-box">⚠️ {{ error_message }}</div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="number">{{ crm_stats.total_objects|default:"—" }}</div>
+            <div class="label">CRM Obyektlar</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ local_stats.market_prices }}</div>
+            <div class="label">Bozor Narxlari</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ local_stats.analyses }}</div>
+            <div class="label">Tahlillar</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ local_stats.olx_properties }}</div>
+            <div class="label">OLX E'lonlar</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ local_stats.comparisons }}</div>
+            <div class="label">Taqqoslashlar</div>
+        </div>
+    </div>
+
+    <h3 class="section-title">📈 Tahlil Natijalari</h3>
+    <div class="status-grid">
+        <div class="status-card" style="border-color: #00C853;">
+            <div class="count" style="color: #00C853;">{{ local_stats.analyses_by_status.juda_arzon }}</div>
+            <div class="status-label">Juda Arzon</div>
+        </div>
+        <div class="status-card" style="border-color: #64DD17;">
+            <div class="count" style="color: #64DD17;">{{ local_stats.analyses_by_status.arzon }}</div>
+            <div class="status-label">Arzon</div>
+        </div>
+        <div class="status-card" style="border-color: #FFC107;">
+            <div class="count" style="color: #FFC107;">{{ local_stats.analyses_by_status.normal }}</div>
+            <div class="status-label">Normal</div>
+        </div>
+        <div class="status-card" style="border-color: #FF6F00;">
+            <div class="count" style="color: #FF6F00;">{{ local_stats.analyses_by_status.qimmat }}</div>
+            <div class="status-label">Qimmat</div>
+        </div>
+        <div class="status-card" style="border-color: #D32F2F;">
+            <div class="count" style="color: #D32F2F;">{{ local_stats.analyses_by_status.juda_qimmat }}</div>
+            <div class="status-label">Juda Qimmat</div>
+        </div>
+    </div>
+
+    <h3 class="section-title">🔗 Tezkor Havolalar</h3>
+    <div class="quick-links">
+        <a href="{% url 'market_analys:crm_objects' %}" class="quick-link">
+            <span class="icon">🏢</span>
+            <div class="text"><h4>CRM Obyektlar</h4><p>Barcha binolarni ko'rish va qidirish</p></div>
+        </a>
+        <a href="{% url 'market_analys:analyze_property' %}" class="quick-link">
+            <span class="icon">🤖</span>
+            <div class="text"><h4>AI Tahlil</h4><p>Obyektni narx tahlil qilish</p></div>
+        </a>
+        <a href="{% url 'market_analys:analysis_results' %}" class="quick-link">
+            <span class="icon">📋</span>
+            <div class="text"><h4>Tahlil Natijalari</h4><p>Barcha tahlillar ro'yxati</p></div>
+        </a>
+        <a href="{% url 'market_analys:market_prices' %}" class="quick-link">
+            <span class="icon">💰</span>
+            <div class="text"><h4>Bozor Narxlari</h4><p>Ma'lumotnoma narxlari</p></div>
+        </a>
+    </div>
+
+    {% if crm_objects %}
+    <div class="crm-objects-preview">
+        <h3>🏢 So'nggi CRM Obyektlar</h3>
+        {% for obj in crm_objects %}
+        <div class="object-row">
+            <div class="object-info">
+                <span class="object-id">#{{ obj.id }}</span>
+                <div>
+                    <strong>{{ obj.rooms_numbers|default:"—" }} xona</strong>
+                    {% if obj.general_area %} · {{ obj.general_area }} m²{% endif %}
+                    {% if obj.floor %} · {{ obj.floor }}-qavat{% endif %}
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span class="object-price">{% if obj.price_usd %}${{ obj.price_usd }}{% else %}—{% endif %}</span>
+                <a href="{% url 'market_analys:crm_object_detail' obj.id %}" class="btn btn-sm btn-outline-primary">Ko'rish</a>
+            </div>
+        </div>
+        {% endfor %}
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="{% url 'market_analys:crm_objects' %}" class="btn btn-primary">Barchasini Ko'rish →</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch("{% url 'market_analys:sync_crm' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            console.log('CRM sync OK:', data.message);
+        }
+    }).catch(err => console.log('CRM sync error:', err));
+});
+</script>
+{% endblock %}

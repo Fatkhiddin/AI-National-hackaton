@@ -1,0 +1,14 @@
+# Market Analysis Module - Required Packages
+
+# AI Integration
+anthropic>=0.30.0
+
+# Data Processing
+pandas>=2.0.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Already included in Django project:
+# Django>=4.2
+# python-dotenv

@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Obyekt #{{ obj.id }} - Market Analiz{% endblock %}
+{% block page_title %}🏢 Obyekt #{{ obj.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-container { padding: 0; }
+    .back-link { margin-bottom: 16px; display: inline-block; color: var(--accent-light); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    .back-link:hover { color: #c4b5fd; }
+
+    .detail-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 28px; margin-bottom: 24px;
+    }
+    .detail-card h3 {
+        margin: 0 0 20px; font-size: 1.3rem; color: var(--text-primary); font-weight: 700;
+        border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+    }
+
+    .info-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;
+    }
+    .info-item { display: flex; gap: 10px; padding: 10px 12px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color); }
+    .info-item .label { font-weight: 600; color: var(--text-secondary); min-width: 120px; font-size: 0.85rem; }
+    .info-item .value { color: var(--text-primary); font-weight: 500; }
+
+    .price-big { font-size: 2rem; font-weight: 800; color: #86efac; text-align: center; padding: 10px; }
+
+    .analysis-section {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 28px; border-left: 3px solid var(--accent);
+    }
+    .analysis-section h3 { margin: 0 0 15px; color: var(--text-primary); font-weight: 700; }
+    .status-badge { display: inline-block; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: 1rem; color: white; }
+    .analysis-details { margin-top: 20px; }
+    .analysis-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+    .analysis-row:last-child { border: none; }
+    .analysis-row strong { color: var(--text-primary); }
+    .ai-text { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); border-radius: 12px; padding: 16px; margin-top: 16px; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-primary); }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px; color: #fca5a5; margin-bottom: 20px; }
+    .action-bar { display: flex; gap: 12px; margin-top: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <a href="{% url 'market_analys:crm_objects' %}" class="back-link">← Obyektlar ro'yxatiga qaytish</a>
+
+    {% if error_message %}
+    <div class="error-box">⚠️ {{ error_message }}</div>
+    {% endif %}
+
+    {% if obj %}
+    <!-- Object Details -->
+    <div class="detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3>🏢 Obyekt #{{ obj.id }}</h3>
+            <div class="price-big" style="font-size:1.8rem; padding:0;">
+                {% if obj.price_usd %}${{ obj.price_usd|floatformat:0 }}{% else %}Narx yo'q{% endif %}
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">🚪 Xonalar:</span>
+                <span class="value">{{ obj.rooms_numbers|default:"—" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">📐 Umumiy maydon:</span>
+                <span class="value">{{ obj.general_area|default:"—" }} m²</span>
+            </div>
+            <div class="info-item">
+                <span class="label">📐 Yashash maydoni:</span>
+                <span class="value">{{ obj.living_area|default:"—" }} m²</span>
+            </div>
+            <div class="info-item">
+                <span class="label">🏗️ Qavat:</span>
+                <span class="value">{{ obj.floor|default:"—" }} / {{ obj.number_of_floors|default:"—" }}</span>
+            </div>
+            {% if obj.state_repair %}
+            <div class="info-item">
+                <span class="label">🔧 Ta'mir holati:</span>
+                <span class="value">{{ obj.state_repair.name|default:obj.state_repair }}</span>
+            </div>
+            {% endif %}
+            {% if obj.type_building %}
+            <div class="info-item">
+                <span class="label">🏢 Qurilish turi:</span>
+                <span class="value">{{ obj.type_building.name|default:obj.type_building }}</span>
+            </div>
+            {% endif %}
+            {% if obj.address %}
+            <div class="info-item">
+                <span class="label">📍 Manzil:</span>
+                <span class="value">{{ obj.address.street|default:"" }} {{ obj.address.house|default:"" }}</span>
+            </div>
+            {% endif %}
+            {% if obj.price_uzs %}
+            <div class="info-item">
+                <span class="label">💵 Narx (UZS):</span>
+                <span class="value">{{ obj.price_uzs|floatformat:0 }} so'm</span>
+            </div>
+            {% endif %}
+            {% if obj.price_usd_per_area %}
+            <div class="info-item">
+                <span class="label">📊 $/m²:</span>
+                <span class="value">${{ obj.price_usd_per_area|floatformat:0 }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="action-bar">
+            <button id="analyzeBtn" class="btn btn-primary">🤖 AI Tahlil Qilish</button>
+            <a href="{% url 'market_analys:crm_objects' %}" class="btn btn-outline-secondary">Orqaga</a>
+        </div>
+    </div>
+
+    <!-- Analysis Result -->
+    {% if analysis %}
+    <div class="analysis-section" id="analysisResult">
+        <h3>📊 Narx Tahlili</h3>
+        <div style="text-align:center; margin-bottom:20px;">
+            <span class="status-badge" style="background:{{ analysis.get_status_color }}">
+                {{ analysis.get_status_display }}
+            </span>
+        </div>
+        <div class="analysis-details">
+            <div class="analysis-row">
+                <span>Bozor narxi ($/m²):</span>
+                <strong>${{ analysis.bozor_narxi|floatformat:0 }}</strong>
+            </div>
+            <div class="analysis-row">
+                <span>Joriy narx ($/m²):</span>
+                <strong>${{ analysis.joriy_narxi|floatformat:0 }}</strong>
+            </div>
+            <div class="analysis-row">
+                <span>Farq:</span>
+                <strong>{{ analysis.farq_foiz|floatformat:1 }}% (${{ analysis.farq_summa|floatformat:0 }})</strong>
+            </div>
+            <div class="analysis-row">
+                <span>Ishonch darajasi:</span>
+                <strong>{{ analysis.confidence_score|floatformat:0 }}%</strong>
+            </div>
+            <div class="analysis-row">
+                <span>Tahlil vaqti:</span>
+                <strong>{{ analysis.analyzed_at }}</strong>
+            </div>
+        </div>
+        {% if analysis.ai_tahlil %}
+        <div class="ai-text"><strong>🤖 AI Tahlil:</strong><br>{{ analysis.ai_tahlil }}</div>
+        {% endif %}
+        {% if analysis.tavsiya %}
+        <div class="ai-text" style="background: #f0fdf4;"><strong>💡 Tavsiya:</strong><br>{{ analysis.tavsiya }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center; padding:60px; color:#6b7280;">
+        <div style="font-size:3rem;">🏢</div>
+        <h3>Obyekt topilmadi</h3>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if obj %}
+document.getElementById('analyzeBtn')?.addEventListener('click', function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = '⏳ Tahlil qilinmoqda...';
+
+    fetch("{% url 'market_analys:api_analyze' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ property_id: {{ obj.id }} })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            btn.textContent = '✅ Tahlil tugadi!';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            // Sahifani yangilash
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            btn.textContent = '❌ ' + (data.error || 'Xato');
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        btn.textContent = '❌ Tarmoq xatosi';
+        btn.disabled = false;
+    });
+});
+{% endif %}
+</script>
+{% endblock %}

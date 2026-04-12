@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}Bozor Narxlari - Market Analiz{% endblock %}
+{% block page_title %}💰 Bozor Narxlari{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prices-container { padding: 0; }
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);
+    }
+    .section-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-primary); font-weight: 800; }
+
+    .stats-row {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px; margin-bottom: 24px;
+    }
+    .type-stat {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; text-align: center; border-top: 3px solid var(--accent);
+    }
+    .type-stat .count { font-size: 1.8rem; font-weight: 700; color: var(--accent-light); }
+    .type-stat .label { font-size: 0.8rem; color: var(--text-secondary); }
+
+    .filters-bar {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        display: flex; gap: 14px; align-items: end; flex-wrap: wrap;
+    }
+    .filters-bar label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+    .filters-bar select {
+        padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 10px; font-size: 0.9rem; color: var(--text-primary);
+    }
+
+    .prices-table {
+        width: 100%; background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; overflow: hidden;
+    }
+    .prices-table th {
+        background: var(--bg-secondary); padding: 12px 16px; text-align: left;
+        font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .prices-table td {
+        padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem; color: var(--text-primary);
+    }
+    .prices-table tr:hover { background: var(--bg-card-hover); }
+    .prices-table tr:last-child td { border-bottom: none; }
+
+    .price-cell { font-weight: 700; }
+    .price-low { color: #86efac; }
+    .price-mid { color: #fde68a; }
+    .price-high { color: #fca5a5; }
+
+    .building-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 0.78rem; font-weight: 600;
+    }
+    .badge-gishtli { background: rgba(245,158,11,0.15); color: #fde68a; }
+    .badge-panelli { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .badge-monolitli { background: rgba(34,197,94,0.15); color: #86efac; }
+    .badge-blokli { background: rgba(168,85,247,0.15); color: #d8b4fe; }
+
+    .holat-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
+    .holat-remontli { background: rgba(34,197,94,0.15); color: #86efac; }
+    .holat-remontsiz { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+    .pagination-bar { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+    .pagination-bar a, .pagination-bar span { padding: 8px 14px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 0.9rem; }
+    .pagination-bar a { background: var(--bg-card); color: var(--accent-light); border: 1px solid var(--border-color); }
+    .pagination-bar a:hover { background: var(--accent); color: white; }
+    .pagination-bar .current { background: var(--accent); color: white; }
+
+    .empty-state { text-align: center; padding: 60px; color: var(--text-secondary); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 15px; }
+    .empty-state h3 { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prices-container">
+    <div class="section-header">
+        <h2>💰 Bozor Narxlari Ma'lumotnomasi</h2>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button id="syncBtn" class="btn btn-outline-success" style="font-size:0.85rem;">🔄 Sync</button>
+            <a href="{% url 'market_analys:dashboard' %}" class="btn btn-outline-primary" style="font-size:0.85rem;">← Dashboard</a>
+        </div>
+    </div>
+
+    {% if error_message %}
+    <div class="alert alert-danger" style="margin-bottom:16px;">
+        <strong>❌ Xato:</strong> {{ error_message }}
+    </div>
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="type-stat">
+            <div class="count">{{ stats.total }}</div>
+            <div class="label">Jami</div>
+        </div>
+        <div class="type-stat" style="border-color: #f59e0b;">
+            <div class="count" style="color: #fde68a;">{{ stats.gishtli }}</div>
+            <div class="label">G'ishtli</div>
+        </div>
+        <div class="type-stat" style="border-color: #3b82f6;">
+            <div class="count" style="color: #93c5fd;">{{ stats.panelli }}</div>
+            <div class="label">Panelli</div>
+        </div>
+        <div class="type-stat" style="border-color: #22c55e;">
+            <div class="count" style="color: #86efac;">{{ stats.monolitli }}</div>
+            <div class="label">Monolitli</div>
+        </div>
+        <div class="type-stat" style="border-color: #a855f7;">
+            <div class="count" style="color: #d8b4fe;">{{ stats.blokli }}</div>
+            <div class="label">Blokli</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" action="{% url 'market_analys:market_prices' %}" class="filters-bar">
+        <div>
+            <label>Qurilish turi:</label>
+            <select name="building">
+                <option value="">Barchasi</option>
+                <option value="gishtli" {% if building_filter == "gishtli" %}selected{% endif %}>G'ishtli</option>
+                <option value="panelli" {% if building_filter == "panelli" %}selected{% endif %}>Panelli</option>
+                <option value="monolitli" {% if building_filter == "monolitli" %}selected{% endif %}>Monolitli</option>
+                <option value="blokli" {% if building_filter == "blokli" %}selected{% endif %}>Blokli</option>
+            </select>
+        </div>
+        <div>
+            <label>Holat:</label>
+            <select name="holat">
+                <option value="">Barchasi</option>
+                <option value="remontli" {% if holat_filter == "remontli" %}selected{% endif %}>Remontli</option>
+                <option value="remontsiz" {% if holat_filter == "remontsiz" %}selected{% endif %}>Remontsiz</option>
+            </select>
+        </div>
+        <div>
+            <label>Xonalar:</label>
+            <select name="rooms">
+                <option value="">Barchasi</option>
+                {% for i in "123456" %}<option value="{{ i }}" {% if rooms_filter == i %}selected{% endif %}>{{ i }} xona</option>{% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Tartiblash:</label>
+            <select name="ordering">
+                <option value="etaj" {% if ordering == "etaj" %}selected{% endif %}>Qavat ↑</option>
+                <option value="-etaj" {% if ordering == "-etaj" %}selected{% endif %}>Qavat ↓</option>
+                <option value="bozor_narx" {% if ordering == "bozor_narx" %}selected{% endif %}>Narx ↑</option>
+                <option value="-bozor_narx" {% if ordering == "-bozor_narx" %}selected{% endif %}>Narx ↓</option>
+                <option value="xonalar_soni" {% if ordering == "xonalar_soni" %}selected{% endif %}>Xonalar ↑</option>
+                <option value="-updated_at" {% if ordering == "-updated_at" %}selected{% endif %}>Yangilangan</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">🔍 Filtr</button>
+        <a href="{% url 'market_analys:market_prices' %}" class="btn btn-outline-secondary" style="font-size:0.85rem;">↺ Tozalash</a>
+    </form>
+
+    <!-- Prices Table -->
+    {% if results %}
+    <table class="prices-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Qurilish</th>
+                <th>Holat</th>
+                <th>Xonalar</th>
+                <th>Qavat</th>
+                <th>Maydon</th>
+                <th>Arzon (so'm/m²)</th>
+                <th>Bozor (so'm/m²)</th>
+                <th>Qimmat (so'm/m²)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in results %}
+            <tr>
+                <td style="color:var(--text-secondary); font-size:0.8rem;">{{ forloop.counter }}</td>
+                <td>
+                    <span class="building-badge badge-{{ p.qurilish_turi }}">
+                        {{ p.qurilish_turi_display }}
+                    </span>
+                </td>
+                <td>
+                    <span class="holat-badge holat-{{ p.holat }}">
+                        {{ p.holat_display }}
+                    </span>
+                </td>
+                <td style="text-align:center; font-weight:600;">{{ p.xonalar_soni }}</td>
+                <td style="text-align:center;">{{ p.etaj }}</td>
+                <td>{{ p.maydon_display }}</td>
+                <td class="price-cell price-low">{{ p.arzon_narx }}</td>
+                <td class="price-cell price-mid">{{ p.bozor_narx }}</td>
+                <td class="price-cell price-high">{{ p.qimmat_narx }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="pagination-bar">
+        {% if has_previous %}
+        <a href="?page={{ current_page|add:"-1" }}&building={{ building_filter }}&holat={{ holat_filter }}&rooms={{ rooms_filter }}&ordering={{ ordering }}">← Oldingi</a>
+        {% endif %}
+
+        <span class="current">{{ current_page }} / {{ total_pages }}</span>
+
+        {% if has_next %}
+        <a href="?page={{ current_page|add:"1" }}&building={{ building_filter }}&holat={{ holat_filter }}&rooms={{ rooms_filter }}&ordering={{ ordering }}">Keyingi →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">💰</div>
+        <h3>Bozor narxlari topilmadi</h3>
+        <p>CRM API dan ma'lumot olib bo'lmadi yoki narxlar hali kiritilmagan</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const syncBtn = document.getElementById('syncBtn');
+    if (!syncBtn) return;
+
+    syncBtn.addEventListener('click', function() {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '⏳ Sync...';
+
+        fetch('{% url "market_analys:sync_market_prices" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '🔄 Sync';
+            if (data.success) {
+                alert('✅ ' + data.message);
+                location.reload();
+            } else {
+                alert('❌ ' + data.error);
+            }
+        })
+        .catch(err => {
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '🔄 Sync';
+            alert('❌ Xato: ' + err.message);
+        });
+    });
+});
+
+function getCookie(name) {
+    let v = null;
+    if (document.cookie) {
+        document.cookie.split(';').forEach(c => {
+            c = c.trim();
+            if (c.startsWith(name + '='))
+                v = decodeURIComponent(c.substring(name.length + 1));
+        });
+    }
+    return v;
+}
+</script>
+{% endblock %}

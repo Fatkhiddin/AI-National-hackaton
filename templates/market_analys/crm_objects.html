@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}CRM Obyektlar - Market Analiz{% endblock %}
+{% block page_title %}🏢 CRM Obyektlar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .objects-container { padding: 0; }
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);
+    }
+    .section-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-primary); font-weight: 800; }
+
+    .filters {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        padding: 20px; border-radius: 14px; margin-bottom: 24px;
+    }
+    .filter-row {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px; align-items: end;
+    }
+    .filter-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+    .filter-group input, .filter-group select {
+        width: 100%; padding: 9px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 10px; font-size: 0.9rem; color: var(--text-primary);
+    }
+    .filter-group input::placeholder { color: var(--text-secondary); }
+
+    .objects-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px;
+    }
+    .object-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; padding: 20px; transition: all 0.3s;
+        border-left: 3px solid var(--accent);
+    }
+    .object-card:hover { transform: translateY(-3px); background: var(--bg-card-hover); border-color: rgba(99,102,241,0.3); }
+    .object-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .object-card-header .obj-id {
+        background: rgba(99,102,241,0.15); color: var(--accent-light); padding: 4px 12px;
+        border-radius: 8px; font-weight: 700; font-size: 0.85rem;
+    }
+    .object-card-header .obj-price { font-weight: 800; color: #86efac; font-size: 1.1rem; }
+    .object-detail-row { display: flex; gap: 8px; margin-bottom: 5px; font-size: 0.88rem; color: var(--text-secondary); }
+    .object-detail-row .detail-label { font-weight: 600; color: var(--text-primary); min-width: 80px; font-size: 0.85rem; }
+    .object-actions { display: flex; gap: 10px; margin-top: 14px; }
+
+    .pagination-bar { display: flex; justify-content: center; gap: 10px; margin-top: 28px; }
+    .pagination-bar a, .pagination-bar span { padding: 8px 16px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 0.9rem; }
+    .pagination-bar a { background: var(--bg-card); color: var(--accent-light); border: 1px solid var(--border-color); }
+    .pagination-bar a:hover { background: var(--accent); color: white; }
+    .pagination-bar .current-page { background: var(--accent); color: white; }
+
+    .results-info { color: var(--text-secondary); margin-bottom: 14px; font-size: 0.9rem; }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px; color: #fca5a5; margin-bottom: 20px; }
+    .empty-state { text-align: center; padding: 60px; color: var(--text-secondary); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 15px; }
+    .empty-state h3 { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="objects-container">
+    <div class="section-header">
+        <h2>🏢 CRM Obyektlar</h2>
+        <a href="{% url 'market_analys:dashboard' %}" class="btn btn-outline-primary">← Dashboard</a>
+    </div>
+
+    {% if error_message %}
+    <div class="error-box">⚠️ {{ error_message }}</div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="filters">
+        <form method="get" action="{% url 'market_analys:crm_objects' %}">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>🔍 Qidirish</label>
+                    <input type="text" name="search" value="{{ filters.search }}" placeholder="ID, manzil...">
+                </div>
+                <div class="filter-group">
+                    <label>🚪 Xonalar</label>
+                    <select name="rooms_numbers">
+                        <option value="">Barchasi</option>
+                        {% for i in "123456" %}<option value="{{ i }}" {% if filters.rooms_numbers == i %}selected{% endif %}>{{ i }} xona</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>💰 Min narx ($)</label>
+                    <input type="number" name="min_price" value="{{ filters.min_price }}" placeholder="Dan...">
+                </div>
+                <div class="filter-group">
+                    <label>💰 Max narx ($)</label>
+                    <input type="number" name="max_price" value="{{ filters.max_price }}" placeholder="Gacha...">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results -->
+    {% if pagination.count %}
+    <div class="results-info">Jami: <strong>{{ pagination.count }}</strong> ta obyekt | Sahifa {{ pagination.current_page }}/{{ pagination.total_pages }}</div>
+    {% endif %}
+
+    {% if objects %}
+    <div class="objects-grid">
+        {% for obj in objects %}
+        <div class="object-card">
+            <div class="object-card-header">
+                <span class="obj-id">#{{ obj.id }}</span>
+                <span class="obj-price">
+                    {% if obj.price_usd %}${{ obj.price_usd|floatformat:0 }}{% else %}Narx ko'rsatilmagan{% endif %}
+                </span>
+            </div>
+            <div class="object-detail-row">
+                <span class="detail-label">Xonalar:</span>
+                <span>{{ obj.rooms_numbers|default:"—" }} xona</span>
+            </div>
+            <div class="object-detail-row">
+                <span class="detail-label">Maydon:</span>
+                <span>{{ obj.general_area|default:"—" }} m²</span>
+            </div>
+            <div class="object-detail-row">
+                <span class="detail-label">Qavat:</span>
+                <span>{{ obj.floor|default:"—" }} / {{ obj.number_of_floors|default:"—" }}</span>
+            </div>
+            {% if obj.address %}
+            <div class="object-detail-row">
+                <span class="detail-label">Manzil:</span>
+                <span>{{ obj.address.street|default:"" }} {{ obj.address.house|default:"" }}</span>
+            </div>
+            {% endif %}
+            <div class="object-actions">
+                <a href="{% url 'market_analys:crm_object_detail' obj.id %}" class="btn btn-sm btn-primary">Batafsil</a>
+                <button class="btn btn-sm btn-outline-success analyze-btn" data-id="{{ obj.id }}">🤖 Tahlil</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.current_page|add:"-1" }}&search={{ filters.search }}&rooms_numbers={{ filters.rooms_numbers }}">← Oldingi</a>
+        {% endif %}
+        <span class="current-page">{{ pagination.current_page }}</span>
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.current_page|add:"1" }}&search={{ filters.search }}&rooms_numbers={{ filters.rooms_numbers }}">Keyingi →</a>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">🏢</div>
+        <h3>Obyektlar topilmadi</h3>
+        <p>CRM dan ma'lumot olib bo'lmadi yoki filtrlar bo'yicha natija yo'q</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.analyze-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.id;
+        this.disabled = true;
+        this.textContent = '⏳ Tahlil...';
+
+        fetch("{% url 'market_analys:api_analyze' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ property_id: id })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                this.textContent = '✅ ' + data.analysis.status;
+                this.classList.remove('btn-outline-success');
+                this.classList.add('btn-success');
+            } else {
+                this.textContent = '❌ Xato';
+                alert(data.error || 'Tahlil xatosi');
+            }
+        })
+        .catch(err => {
+            this.textContent = '❌ Xato';
+            alert('Tarmoq xatosi');
+        })
+        .finally(() => { this.disabled = false; });
+    });
+});
+</script>
+{% endblock %}

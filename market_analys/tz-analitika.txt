@@ -1,0 +1,874 @@
+# Technical Specification (TZ)
+# Django App: market_analysis
+
+## 🎯 LOYIHA MAQSADI
+
+CRM tizimida mavjud ko'chmas mulk (uy-joy) obyektlarining narxlarini bozor narxlari bilan taqqoslash va AI yordamida tahlil qilish tizimini yaratish. Shu 
+bilan birga OLX dan variantlarni ham shu tarzda tahlil qilish
+
+---
+
+## 📊 MA'LUMOTLAR MANBASI
+
+### Google Sheets (3 ta fayl)
+- **URL 1**: https://docs.google.com/spreadsheets/d/1hVwC09Wlz4HPcQCnZpkGsznFHEfZ0Z9B575Sgq8aaRk/edit?usp=sharing
+- **URL 2**: https://docs.google.com/spreadsheets/d/1OCjZjtwIV4rzKRDoGsudOus3rSIzN6zzT8nFsysLcRw/edit?usp=drivesdk
+- **URL 3**: https://docs.google.com/spreadsheets/d/11hg22AxGAv2yKkZbRbIUreXnjGASyrvIIZIkk-eVMUk/edit?usp=drivesdk
+
+### Har bir fayl ichida 2 ta sheet:
+1. **Remontli** - ta'mirlangan uylar uchun narxlar
+2. **Remontsiz** - ta'mirlanmagan uylar uchun narxlar
+
+### Ma'lumotlar Strukturasi (CSV format):
+```
+T/r | Etaj | Xonalar soni | Qurilish turi | Maydon | Arzon | Bozor | Qimmat
+1   | 1    | 2           | Gʻishtli      | 45     | 25000 | 28000 | 31000
+```
+
+**Ustunlar:**
+- `T/r` - Tartib raqami (ignore)
+- `Etaj` - Qavat raqami (integer)
+- `Xonalar soni` - Xonalar soni (integer)
+- `Qurilish turi` - Bino turi: "Gʻishtli", "Panelli", "Monolitli", "Blokli"
+- `Maydon` - maksimal maydon (integer, m²)
+- `Arzon` - Minimal narx (decimal, so'm/m²)
+- `Bozor` - O'rtacha bozor narxi (decimal, so'm/m²)
+- `Qimmat` - Maksimal narx (decimal, so'm/m²)
+
+**MUHIM QOIDALAR:**
+- Agar narx = 0 yoki bo'sh, bu qatorni ignore qilish
+- Maydon diapazonini hisoblash: maydon to maydon+5 (masalan: 45-50m²)
+
+---
+
+## 🗂️ LOYIHA STRUKTURASI
+
+```
+market_analysis/
+├── __init__.py
+├── models.py                    # Database models
+├── admin.py                     # Admin panel configuration
+├── apps.py                      # App configuration
+├── services/
+│   ├── __init__.py
+│   ├── google_sheets_importer.py    # Google Sheets import service
+│   ├── claude_integration.py        # Claude AI integration
+│   └── price_analyzer.py            # Narx tahlil service
+├── management/
+│   └── commands/
+│       ├── __init__.py
+│       ├── import_market_data.py    # Import command
+│       └── analyze_properties.py    # Analyze command
+└── migrations/
+    └── __init__.py
+```
+
+---
+
+## 📦 REQUIREMENTS
+
+```txt
+# requirements.txt ga qo'shish kerak
+Django>=4.2
+anthropic>=0.30.0
+pandas>=2.0.0
+requests>=2.31.0
+```
+
+---
+
+## 🗄️ DATABASE MODELS
+
+### Model 1: MarketPriceReference
+
+**Maqsad:** Google Sheets'dan import qilingan bozor narxlarini saqlash
+
+**Fields:**
+
+```python
+class MarketPriceReference(models.Model):
+    # Primary parametrlar
+    etaj = IntegerField()  # Qavat raqami (1, 2, 3, ...)
+    xonalar_soni = IntegerField()  # Xonalar soni (1, 2, 3, 4)
+    qurilish_turi = CharField(max_length=50, choices=[
+        ('gishtli', 'Gʻishtli'),
+        ('panelli', 'Panelli'),
+        ('monolitli', 'Monolitli'),
+        ('blokli', 'Blokli'),
+    ])
+    holat = CharField(max_length=20, choices=[
+        ('remontli', 'Remontli'),
+        ('remontsiz', 'Remontsiz'),
+    ])
+    
+    # Maydon diapazon
+    maydon_min = IntegerField()  # maximal maydon (m²)
+    maydon_max = IntegerField(null=True)  # Maksimal maydon (m²)
+    
+    # Narxlar (so'm/m²)
+    arzon_narx = DecimalField(max_digits=12, decimal_places=2)
+    bozor_narx = DecimalField(max_digits=12, decimal_places=2)
+    qimmat_narx = DecimalField(max_digits=12, decimal_places=2)
+    
+    # Metadata
+    source_file = CharField(max_length=200, blank=True)  # Qaysi fayldan
+    created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
+    
+    # Meta options
+    unique_together = ['etaj', 'xonalar_soni', 'qurilish_turi', 'holat', 'maydon_min']
+    indexes = [
+        Index(fields=['qurilish_turi', 'xonalar_soni']),
+        Index(fields=['etaj', 'holat']),
+    ]
+```
+
+**Methods:**
+- `get_narx_range()` → dict: {'min': float, 'avg': float, 'max': float}
+- `__str__()` → string: "Gʻishtli - 2 xona - 1-etaj - Remontli"
+
+---
+
+### Model 2: PropertyPriceAnalysis
+
+**Maqsad:** Mulk obyektlarining narx tahlil natijalarini saqlash
+
+**Fields:**
+
+```python
+class PropertyPriceAnalysis(models.Model):
+    # Property reference (sizning CRM Property modelingizga bog'lanadi)
+    property_id = IntegerField(db_index=True)
+    
+    # Tahlil natijalari
+    status = CharField(max_length=20, choices=[
+        ('juda_arzon', 'Juda Arzon'),
+        ('arzon', 'Arzon'),
+        ('normal', 'Normal'),
+        ('qimmat', 'Qimmat'),
+        ('juda_qimmat', 'Juda Qimmat'),
+    ])
+    
+    # Narx taqqoslash
+    bozor_narxi = DecimalField(max_digits=12, decimal_places=2)  # Bozor narxi (m²)
+    joriy_narxi = DecimalField(max_digits=12, decimal_places=2)  # Hozirgi narx (m²)
+    farq_foiz = DecimalField(max_digits=6, decimal_places=2)  # Farq foizda
+    farq_summa = DecimalField(max_digits=15, decimal_places=2)  # Farq so'mda
+    
+    # AI tahlili
+    ai_tahlil = TextField(blank=True)  # AI tomonidan yozilgan tahlil
+    tavsiya = TextField(blank=True)  # AI tavsiyasi
+    confidence_score = DecimalField(max_digits=5, decimal_places=2)  # 0-100
+    
+    # Reference
+    matched_reference = ForeignKey(MarketPriceReference, on_delete=SET_NULL, null=True)
+    
+    # Metadata
+    analyzed_at = DateTimeField(auto_now_add=True)
+    
+    # Indexes
+    indexes = [
+        Index(fields=['property_id', '-analyzed_at']),
+        Index(fields=['status']),
+    ]
+```
+
+**Methods:**
+- `get_status_color()` → string: Hex color code (masalan: "#00C853")
+- `get_recommendation_summary()` → string: Qisqa tavsiya matni
+- `__str__()` → string: "Property #123 - Arzon"
+
+---
+
+## 🔧 SERVICES
+
+### Service 1: google_sheets_importer.py
+
+**Class:** `GoogleSheetsImporter`
+
+**Maqsad:** Google Sheets'dan ma'lumotlarni import qilish
+
+**Methods:**
+
+#### 1. `__init__(self)`
+```python
+"""
+Initialization
+- SHEETS_URLS dict'ini o'rnatish (3 ta URL)
+- QURILISH_MAP dict (Gʻishtli -> gishtli)
+- Counters: imported_count, error_count, errors list
+"""
+```
+
+#### 2. `import_all(self) -> dict`
+```python
+"""
+Barcha Google Sheets'lardan import qilish
+
+Returns:
+    {
+        'imported': int,
+        'errors': int,
+        'error_details': list
+    }
+
+Algorithm:
+    1. Har bir SHEETS_URLS ni iterate qilish
+    2. Har bir sheet uchun 2 marta call: 
+       - import_sheet(url, 'remontli')
+       - import_sheet(url, 'remontsiz')
+    3. Print progress
+    4. Return statistics
+"""
+```
+
+#### 3. `import_sheet(self, url: str, source_name: str, holat: str)`
+```python
+"""
+Bitta sheet'dan import
+
+Parameters:
+    url: Google Sheets URL
+    source_name: Fayl nomi (tracking uchun)
+    holat: 'remontli' yoki 'remontsiz'
+
+Algorithm:
+    1. URL ni CSV export formatga o'zgartirish:
+       /edit?usp=... -> /export?format=csv
+    2. requests.get() bilan yuklab olish
+    3. CSV ni parse qilish (split by newline)
+    4. Header'ni skip qilish (1-2 qatorlar)
+    5. Har bir qator uchun process_row() call qilish
+"""
+```
+
+#### 4. `process_row(self, row: str, source_name: str, holat: str)`
+```python
+"""
+Bitta CSV qatorini database'ga saqlash
+
+Parameters:
+    row: CSV qator (comma-separated)
+    source_name: Fayl nomi
+    holat: 'remontli' yoki 'remontsiz'
+
+Algorithm:
+    1. CSV qatorini parse: split(',')
+    2. Extract ma'lumotlar:
+       - etaj = int(values[1])
+       - xonalar = int(values[2])
+       - qurilish = values[3]
+       - maydon = int(values[4])
+       - arzon = Decimal(values[5])
+       - bozor = Decimal(values[6])
+       - qimmat = Decimal(values[7])
+    
+    3. Validation:
+       - Agar biror qiymat 0 yoki None -> return (skip)
+       - Agar qurilish_turi mapping'da yo'q -> return
+    
+    4. Qurilish turini normalize:
+       - QURILISH_MAP.get(qurilish) -> 'gishtli', 'panelli', etc.
+    
+    5. maydon_max = maydon_min + 5 ni hisoblash
+    
+    6. Database'ga saqlash:
+       MarketPriceReference.objects.update_or_create(
+           etaj=etaj,
+           xonalar_soni=xonalar,
+           qurilish_turi=qurilish_normalized,
+           holat=holat,
+           maydon_min=maydon,
+           defaults={
+               'maydon_max': maydon_max,
+               'arzon_narx': arzon,
+               'bozor_narx': bozor,
+               'qimmat_narx': qimmat,
+               'source_file': source_name,
+           }
+       )
+    
+    7. imported_count++
+"""
+```
+
+#### 5. `clear_all_data(self) -> int`
+```python
+"""
+Barcha MarketPriceReference'larni o'chirish
+
+Returns:
+    int: O'chirilgan yozuvlar soni
+"""
+```
+
+---
+
+### Service 2: claude_integration.py
+
+**Class:** `ClaudeAI`
+
+**Maqsad:** Claude AI API bilan integratsiya
+
+**Constants:**
+```python
+API_URL = "https://api.anthropic.com/v1/messages"
+MODEL = "claude-sonnet-4-20250514"
+```
+
+**Methods:**
+
+#### 1. `__init__(self)`
+```python
+"""
+Initialization
+- Django settings.ANTHROPIC_API_KEY ni olish
+- Agar API key yo'q -> ValueError raise qilish
+"""
+```
+
+#### 2. `analyze_property_price(self, property_data: dict, market_data: dict) -> dict`
+```python
+"""
+Property narxini AI bilan tahlil qilish
+
+Parameters:
+    property_data = {
+        'etaj': int,
+        'xonalar_soni': int,
+        'qurilish_turi': str,
+        'maydon': int,
+        'holat': str,
+        'narx_m2': float,
+        'umumiy_narx': float
+    }
+    
+    market_data = {
+        'arzon': float,
+        'bozor': float,
+        'qimmat': float
+    }
+
+Returns:
+    {
+        'status': str,  # 'arzon', 'normal', etc.
+        'farq_foiz': float,
+        'farq_summa': float,
+        'tahlil': str,
+        'tavsiya': str,
+        'confidence': float,
+        'bozor_narxi': float,
+        'joriy_narxi': float,
+    }
+
+Algorithm:
+    1. _create_analysis_prompt() bilan prompt yaratish
+    2. Claude API ga POST request:
+       - Headers: 
+         * Content-Type: application/json
+         * x-api-key: self.api_key
+         * anthropic-version: 2023-06-01
+       - Body:
+         * model: MODEL
+         * max_tokens: 2000
+         * messages: [{"role": "user", "content": prompt}]
+    3. Response'ni parse qilish
+    4. _parse_analysis() bilan natijani extract qilish
+    5. Agar xato -> _simple_analysis() fallback
+"""
+```
+
+#### 3. `_create_analysis_prompt(self, property_data: dict, market_data: dict) -> str`
+```python
+"""
+Claude uchun prompt yaratish
+
+Prompt struktura:
+    - Context: "Siz ko'chmas mulk narxlarini tahlil qiluvchi professional ekspertsiz"
+    - Property ma'lumotlari (formatted)
+    - Bozor narxlari (formatted)
+    - Vazifa:
+      1. Narxni taqqoslash
+      2. Foiz farqini hisoblash
+      3. Status aniqlash
+      4. Tavsiya berish
+    - JSON response format requirement
+    - FAQAT JSON, boshqa matn yo'q
+
+Expected JSON response format:
+{
+    "status": "arzon",
+    "farq_foiz": -15.5,
+    "farq_summa": -3500000,
+    "tahlil": "...",
+    "tavsiya": "...",
+    "confidence": 85
+}
+"""
+```
+
+#### 4. `_parse_analysis(self, analysis_text: str, property_data: dict, market_data: dict) -> dict`
+```python
+"""
+Claude response'ni parse qilish
+
+Algorithm:
+    1. JSON'ni topish:
+       - json_start = analysis_text.find('{')
+       - json_end = analysis_text.rfind('}') + 1
+    2. JSON extract: json_str = analysis_text[json_start:json_end]
+    3. json.loads(json_str)
+    4. Result dict yaratish
+    5. Agar parse xato -> _simple_analysis() fallback
+"""
+```
+
+#### 5. `_simple_analysis(self, property_data: dict, market_data: dict) -> dict`
+```python
+"""
+Fallback: Oddiy matematik tahlil (AI ishlamasa)
+
+Algorithm:
+    1. joriy_narx = property_data['narx_m2']
+    2. bozor_narx = market_data['bozor']
+    3. farq_foiz = ((joriy - bozor) / bozor) * 100
+    4. farq_summa = (joriy - bozor) * maydon
+    5. Status aniqlash:
+       - farq < -20% -> 'juda_arzon'
+       - farq < -10% -> 'arzon'
+       - farq < 10% -> 'normal'
+       - farq < 20% -> 'qimmat'
+       - farq >= 20% -> 'juda_qimmat'
+    6. Tavsiya generatsiya
+    7. Return dict
+"""
+```
+
+---
+
+### Service 3: price_analyzer.py
+
+**Class:** `PriceAnalyzer`
+
+**Maqsad:** Asosiy narx tahlil logikasi
+
+**Methods:**
+
+#### 1. `__init__(self)`
+```python
+"""
+Initialize ClaudeAI instance
+"""
+```
+
+#### 2. `analyze_property(self, property_obj, use_ai=True) -> PropertyPriceAnalysis`
+```python
+"""
+Bitta property'ni tahlil qilish
+
+Parameters:
+    property_obj: Property model instance (sizning CRM modelingiz)
+    use_ai: bool - AI ishlatishmi?
+
+Returns:
+    PropertyPriceAnalysis instance yoki None
+
+Algorithm:
+    1. _prepare_property_data() - property'dan ma'lumot olish
+    2. _find_market_reference() - mos bozor narxini topish
+    3. Agar market_ref yo'q -> return None
+    4. market_data = market_ref.get_narx_range()
+    5. Agar use_ai == True:
+         - claude.analyze_property_price()
+       Else:
+         - _simple_comparison()
+    6. _save_analysis() - natijani saqlash
+    7. Return PropertyPriceAnalysis
+"""
+```
+
+#### 3. `_prepare_property_data(self, property_obj) -> dict`
+```python
+"""
+Property obyektidan kerakli ma'lumotlarni extract qilish
+
+MUHIM: Bu funksiyani sizning Property modelingizga moslang!
+
+Returns:
+    {
+        'id': int,
+        'etaj': int,
+        'xonalar_soni': int,
+        'qurilish_turi': str,  # normalized
+        'maydon': int,
+        'holat': str,  # 'remontli' yoki 'remontsiz'
+        'narx_m2': float,
+        'umumiy_narx': float,
+    }
+
+Algorithm:
+    1. property field'larini o'qish
+    2. narx_m2 = property.price / property.area
+    3. qurilish_turi'ni normalize qilish:
+       Mapping: {'brick': 'gishtli', 'panel': 'panelli', ...}
+    4. holat = 'remontli' if property.has_repair else 'remontsiz'
+    5. Return dict
+"""
+```
+
+#### 4. `_find_market_reference(self, property_data: dict) -> MarketPriceReference`
+```python
+"""
+Property uchun mos bozor ma'lumotini topish
+
+Algorithm:
+    1. To'liq mos qidiruv:
+       MarketPriceReference.objects.filter(
+           etaj=property_data['etaj'],
+           xonalar_soni=property_data['xonalar_soni'],
+           qurilish_turi=property_data['qurilish_turi'],
+           holat=property_data['holat'],
+           maydon_min__lte=property_data['maydon'],
+           maydon_max__gte=property_data['maydon']
+       ).first()
+    
+    2. Agar topildi -> return
+    
+    3. Aks holda, eng yaqinini topish:
+       - Bir xil etaj, xona, qurilish, holat
+       - Maydon bo'yicha eng yaqin
+       - order_by('maydon_min').first()
+    
+    4. Return yoki None
+"""
+```
+
+#### 5. `_simple_comparison(self, property_data: dict, market_data: dict) -> dict`
+```python
+"""
+Oddiy matematik taqqoslash (AI'siz)
+
+Same as ClaudeAI._simple_analysis()
+"""
+```
+
+#### 6. `_save_analysis(self, property_id: int, analysis_result: dict, market_ref: MarketPriceReference) -> PropertyPriceAnalysis`
+```python
+"""
+Tahlil natijasini database'ga saqlash
+
+Algorithm:
+    PropertyPriceAnalysis.objects.create(
+        property_id=property_id,
+        status=analysis_result['status'],
+        bozor_narxi=analysis_result['bozor_narxi'],
+        joriy_narxi=analysis_result['joriy_narxi'],
+        farq_foiz=analysis_result['farq_foiz'],
+        farq_summa=analysis_result['farq_summa'],
+        ai_tahlil=analysis_result.get('tahlil', ''),
+        tavsiya=analysis_result.get('tavsiya', ''),
+        matched_reference=market_ref,
+        confidence_score=analysis_result['confidence'],
+    )
+"""
+```
+
+#### 7. `bulk_analyze(self, property_queryset, use_ai=True) -> dict`
+```python
+"""
+Ko'p propertylarni bir vaqtda tahlil qilish
+
+Parameters:
+    property_queryset: Django QuerySet
+    use_ai: bool
+
+Returns:
+    {
+        'total': int,
+        'analyzed': int,
+        'failed': int,
+        'statuses': {
+            'juda_arzon': int,
+            'arzon': int,
+            'normal': int,
+            'qimmat': int,
+            'juda_qimmat': int,
+        }
+    }
+
+Algorithm:
+    1. Initialize results dict
+    2. Iterate queryset
+    3. Har biri uchun analyze_property() call
+    4. Statistics to'plash
+    5. Print progress
+    6. Return results
+"""
+```
+
+---
+
+## 🎮 MANAGEMENT COMMANDS
+
+### Command 1: import_market_data.py
+
+**File:** `management/commands/import_market_data.py`
+
+**Command:** `python manage.py import_market_data`
+
+**Arguments:**
+- `--clear`: Avval barcha ma'lumotlarni o'chirish (optional)
+
+**Logic:**
+
+```python
+class Command(BaseCommand):
+    help = 'Google Sheets dan bozor narxlarini import qilish'
+    
+    def handle(self, *args, **options):
+        """
+        Algorithm:
+            1. Agar --clear -> clear_all_data()
+            2. GoogleSheetsImporter() instance yaratish
+            3. importer.import_all() call
+            4. Progress va statistics print qilish
+            5. Success/error message
+        """
+```
+
+**Usage:**
+```bash
+# Oddiy import
+python manage.py import_market_data
+
+# Ma'lumotlarni o'chirib import
+python manage.py import_market_data --clear
+```
+
+---
+
+### Command 2: analyze_properties.py
+
+**File:** `management/commands/analyze_properties.py`
+
+**Command:** `python manage.py analyze_properties`
+
+**Arguments:**
+- `--property-id <ID>`: Bitta property tahlil (optional)
+- `--no-ai`: AI ishlatmasdan tahlil (optional, default: AI ishlatiladi)
+- `--limit <N>`: N ta property tahlil (optional)
+
+**Logic:**
+
+```python
+class Command(BaseCommand):
+    help = 'Propertylarni narx bo\'yicha tahlil qilish'
+    
+    def handle(self, *args, **options):
+        """
+        Algorithm:
+            1. PriceAnalyzer() instance
+            2. use_ai = not options['no_ai']
+            
+            3. Agar property_id berilgan:
+               - Property.objects.get(id=property_id)
+               - analyzer.analyze_property(property, use_ai)
+               - Print natija
+            
+            4. Aks holda bulk analyze:
+               - queryset = Property.objects.all()
+               - Agar limit -> queryset[:limit]
+               - analyzer.bulk_analyze(queryset, use_ai)
+               - Print statistics
+        """
+```
+
+**Usage:**
+```bash
+# Bitta property
+python manage.py analyze_properties --property-id 123
+
+# Barcha propertylar (AI bilan)
+python manage.py analyze_properties
+
+# Birinchi 50 ta (AI'siz)
+python manage.py analyze_properties --limit 50 --no-ai
+```
+
+---
+
+## 🎨 ADMIN PANEL
+
+### Admin 1: MarketPriceReferenceAdmin
+
+**Features:**
+- List display: ID, qurilish_turi, xonalar, etaj, holat, maydon range, narxlar
+- Filters: qurilish_turi, holat, xonalar_soni, etaj
+- Search: source_file
+- Color-coded narxlar: Arzon (green) / Bozor (bold) / Qimmat (red)
+- Action: Export to CSV
+
+**Custom methods:**
+- `maydon_range(obj)`: "45 - 50 m²" format
+- `narx_display(obj)`: HTML formatted narxlar
+
+---
+
+### Admin 2: PropertyPriceAnalysisAdmin
+
+**Features:**
+- List display: ID, property_id, status badge, narxlar, farq, confidence, sana
+- Filters: status, analyzed_at, confidence_score
+- Search: property_id
+- Date hierarchy: analyzed_at
+- Colored status badges
+- Actions: Re-analyze, Export CSV
+
+**Custom methods:**
+- `status_badge(obj)`: Color-coded status
+- `joriy_narxi_display(obj)`: Formatted price
+- `bozor_narxi_display(obj)`: Formatted price
+- `farq_display(obj)`: Color + icon (▼/▲) + foiz
+- `confidence_badge(obj)`: Color-coded confidence
+
+**Inline for Property:**
+- `PropertyPriceAnalysisInline`: Property detail sahifasida ko'rsatish uchun
+
+---
+
+## ⚙️ SETTINGS CONFIGURATION
+
+### settings.py ga qo'shish:
+
+```python
+# App registration
+INSTALLED_APPS = [
+    # ...
+    'market_analysis',
+]
+
+# Claude AI API Key
+ANTHROPIC_API_KEY = 'sk-ant-api03-...'  # https://console.anthropic.com dan oling
+```
+
+---
+
+## 🔄 INTEGRATION WITH EXISTING CRM
+
+### Sizning Property modelingizga moslash:
+
+`price_analyzer.py` da `_prepare_property_data()` funksiyasini o'zgartiring:
+
+```python
+def _prepare_property_data(self, property_obj):
+    """
+    SIZNING Property model fieldlariga moslang!
+    
+    Example mapping:
+        property_obj.floor -> etaj
+        property_obj.rooms -> xonalar_soni
+        property_obj.building_type -> qurilish_turi
+        property_obj.area -> maydon
+        property_obj.has_repair -> holat
+        property_obj.price -> umumiy_narx
+    """
+    pass
+```
+
+---
+
+## 🧪 TESTING
+
+### Manual test:
+
+```python
+# Django shell
+python manage.py shell
+
+from market_analysis.services.price_analyzer import PriceAnalyzer
+from your_app.models import Property
+
+analyzer = PriceAnalyzer()
+property = Property.objects.first()
+result = analyzer.analyze_property(property, use_ai=True)
+
+print(result.status)
+print(result.tavsiya)
+```
+
+---
+
+## 📝 WORKFLOW
+
+1. **Import ma'lumotlar:**
+   ```bash
+   python manage.py import_market_data --clear
+   ```
+
+2. **Tahlil qilish:**
+   ```bash
+   python manage.py analyze_properties
+   ```
+
+3. **Admin panel'da ko'rish:**
+   - http://localhost:8000/admin/market_analysis/
+
+4. **View'da ishlatish:**
+   ```python
+   from market_analysis.services.price_analyzer import PriceAnalyzer
+   
+   analyzer = PriceAnalyzer()
+   analysis = analyzer.analyze_property(property_obj)
+   ```
+
+---
+
+## 🚨 ERROR HANDLING
+
+Barcha servicelar'da:
+- Try/except blocks
+- Logging
+- Fallback mechanisms
+- User-friendly error messages
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+1. ✅ Google Sheets'dan muvaffaqiyatli import
+2. ✅ Property'lar uchun to'g'ri bozor narxini topish
+3. ✅ Claude AI bilan tahlil ishlaydi
+4. ✅ Fallback (AI'siz) tahlil ishlaydi
+5. ✅ Admin panel to'liq functional
+6. ✅ Management commands ishlaydi
+7. ✅ Natijalar to'g'ri va foydali
+
+---
+
+## 📚 NOTES
+
+1. **API Key:** `ANTHROPIC_API_KEY` ni muhofaza qiling, GitHub'ga commit qilmang
+2. **Performance:** Bulk analyze'da progress bar ko'rsating
+3. **Cache:** Tez-tez so'raladigan ma'lumotlarni cache'lash mumkin
+4. **Validation:** Input ma'lumotlarni har doim validate qiling
+5. **Logging:** Muhim operatsiyalar'ni log qiling
+
+---
+
+## 🔧 CUSTOMIZATION POINTS
+
+Quyidagi qismlarni o'zingizning CRM'ingizga moslashingiz kerak:
+
+1. **Property Model Integration** (`price_analyzer.py`):
+   - `_prepare_property_data()` function
+   
+2. **Admin Inline** (`admin.py`):
+   - Property admin'da PropertyPriceAnalysisInline qo'shish
+
+3. **Field Mappings**:
+   - Qurilish turi mapping
+   - Holat detection logikasi
+
+---
+
+END OF TECHNICAL SPECIFICATION

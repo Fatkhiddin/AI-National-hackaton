@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Tahlil Natijalari - Market Analiz{% endblock %}
+{% block page_title %}📋 Tahlil Natijalari{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-container { padding: 0; }
+    .section-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);
+    }
+    .section-header h2 { margin: 0; font-size: 1.8rem; color: var(--text-primary); font-weight: 800; }
+
+    .stats-row {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 12px; margin-bottom: 24px;
+    }
+    .mini-stat {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 14px; text-align: center; border-left: 4px solid;
+    }
+    .mini-stat .count { font-size: 1.6rem; font-weight: 700; }
+    .mini-stat .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); }
+
+    .filters-bar {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        display: flex; gap: 14px; align-items: end; flex-wrap: wrap;
+    }
+    .filters-bar label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+    .filters-bar select, .filters-bar input {
+        padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+        border-radius: 10px; font-size: 0.9rem; color: var(--text-primary);
+    }
+
+    .results-table {
+        width: 100%; background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px; overflow: hidden;
+    }
+    .results-table th {
+        background: var(--bg-secondary); padding: 12px 16px; text-align: left;
+        font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .results-table td {
+        padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem; color: var(--text-primary);
+    }
+    .results-table tr:hover { background: var(--bg-card-hover); }
+    .results-table tr:last-child td { border-bottom: none; }
+
+    .status-badge {
+        display: inline-block; padding: 4px 12px; border-radius: 12px;
+        font-weight: 600; font-size: 0.78rem; color: white;
+    }
+
+    .pagination-bar { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+    .pagination-bar a, .pagination-bar span { padding: 8px 14px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 0.9rem; }
+    .pagination-bar a { background: var(--bg-card); color: var(--accent-light); border: 1px solid var(--border-color); }
+    .pagination-bar a:hover { background: var(--accent); color: white; }
+    .pagination-bar .current { background: var(--accent); color: white; }
+
+    .empty-state { text-align: center; padding: 60px; color: var(--text-secondary); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 15px; }
+    .empty-state h3 { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="section-header">
+        <h2>📋 Tahlil Natijalari</h2>
+        <a href="{% url 'market_analys:dashboard' %}" class="btn btn-outline-primary">← Dashboard</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="mini-stat" style="border-color: #6b7280;">
+            <div class="count">{{ stats.total }}</div>
+            <div class="label">Jami</div>
+        </div>
+        <div class="mini-stat" style="border-color: #00C853;">
+            <div class="count" style="color: #00C853;">{{ stats.juda_arzon }}</div>
+            <div class="label">Juda Arzon</div>
+        </div>
+        <div class="mini-stat" style="border-color: #64DD17;">
+            <div class="count" style="color: #64DD17;">{{ stats.arzon }}</div>
+            <div class="label">Arzon</div>
+        </div>
+        <div class="mini-stat" style="border-color: #FFC107;">
+            <div class="count" style="color: #FFC107;">{{ stats.normal }}</div>
+            <div class="label">Normal</div>
+        </div>
+        <div class="mini-stat" style="border-color: #FF6F00;">
+            <div class="count" style="color: #FF6F00;">{{ stats.qimmat }}</div>
+            <div class="label">Qimmat</div>
+        </div>
+        <div class="mini-stat" style="border-color: #D32F2F;">
+            <div class="count" style="color: #D32F2F;">{{ stats.juda_qimmat }}</div>
+            <div class="label">Juda Qimmat</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" action="{% url 'market_analys:analysis_results' %}" class="filters-bar">
+        <div>
+            <label>Status:</label>
+            <select name="status">
+                <option value="">Barchasi</option>
+                <option value="juda_arzon" {% if status_filter == "juda_arzon" %}selected{% endif %}>Juda Arzon</option>
+                <option value="arzon" {% if status_filter == "arzon" %}selected{% endif %}>Arzon</option>
+                <option value="normal" {% if status_filter == "normal" %}selected{% endif %}>Normal</option>
+                <option value="qimmat" {% if status_filter == "qimmat" %}selected{% endif %}>Qimmat</option>
+                <option value="juda_qimmat" {% if status_filter == "juda_qimmat" %}selected{% endif %}>Juda Qimmat</option>
+            </select>
+        </div>
+        <div>
+            <label>Obyekt ID:</label>
+            <input type="text" name="search" value="{{ search_query }}" placeholder="ID qidirish...">
+        </div>
+        <button type="submit" class="btn btn-primary">Filtr</button>
+    </form>
+
+    <!-- Results Table -->
+    {% if page_obj %}
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>Obyekt</th>
+                <th>Status</th>
+                <th>Bozor ($/m²)</th>
+                <th>Joriy ($/m²)</th>
+                <th>Farq</th>
+                <th>Ishonch</th>
+                <th>Sana</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in page_obj %}
+            <tr>
+                <td>
+                    <strong>#{{ a.property_id }}</strong>
+                    <span style="color:#6b7280; font-size:0.8rem;">{{ a.get_property_type_display }}</span>
+                </td>
+                <td>
+                    <span class="status-badge" style="background: {{ a.get_status_color }};">
+                        {{ a.get_status_display }}
+                    </span>
+                </td>
+                <td>${{ a.bozor_narxi|floatformat:0 }}</td>
+                <td>${{ a.joriy_narxi|floatformat:0 }}</td>
+                <td>
+                    <span style="color: {% if a.farq_foiz > 0 %}#D32F2F{% elif a.farq_foiz < 0 %}#059669{% else %}#6b7280{% endif %};">
+                        {{ a.farq_foiz|floatformat:1 }}%
+                    </span>
+                </td>
+                <td>{{ a.confidence_score|floatformat:0 }}%</td>
+                <td style="font-size:0.8rem; color:#6b7280;">{{ a.analyzed_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    {% if a.property_type == 'buildhouse' %}
+                    <a href="{% url 'market_analys:crm_object_detail' a.property_id %}" class="btn btn-sm btn-outline-primary">Ko'rish</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-bar">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}">← Oldingi</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search_query }}">Keyingi →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">📋</div>
+        <h3>Tahlillar topilmadi</h3>
+        <p>Hali tahlil qilingan obyektlar yo'q</p>
+        <a href="{% url 'market_analys:analyze_property' %}" class="btn btn-primary mt-3">🤖 Birinchi Tahlilni Boshlash</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
