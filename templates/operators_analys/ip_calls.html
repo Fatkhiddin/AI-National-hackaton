@@ -1,0 +1,1091 @@
+{% extends 'base.html' %}
+
+{% block title %}IP Telefon Qo'ng'iroqlari - RoofAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calls-container {
+        padding: 20px 0;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 2rem;
+        color: #1f2937;
+        font-weight: 700;
+    }
+    
+    .connection-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .connected {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .disconnected {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .filters {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .filters h3 {
+        margin: 0 0 20px 0;
+        color: #374151;
+        font-size: 1.1rem;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-group label {
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.9rem;
+    }
+    
+    .filter-group input,
+    .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
+    
+    .filter-submit {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .btn-apply {
+        background-color: #667eea;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-apply:hover {
+        background-color: #5568d3;
+        transform: translateY(-2px);
+    }
+    
+    .error-alert {
+        background-color: #fee2e2;
+        border-left: 4px solid #dc2626;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        color: #991b1b;
+    }
+    
+    .calls-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .calls-table thead {
+        background-color: #f3f4f6;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .calls-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 700;
+        color: #374151;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+    }
+    
+    .calls-table td {
+        padding: 15px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #4b5563;
+    }
+    
+    .calls-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .status-answered {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-missed {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .status-busy {
+        background-color: #fef3c7;
+        color: #7c2d12;
+    }
+    
+    .tree-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .tree-incoming {
+        background-color: #dbeafe;
+        color: #0c4a6e;
+    }
+    
+    .tree-outgoing {
+        background-color: #e0e7ff;
+        color: #3730a3;
+    }
+    
+    .phone-number {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .audio-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .audio-link:hover {
+        text-decoration: underline;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+    }
+    
+    .empty-state h3 {
+        font-size: 1.5rem;
+        color: #374151;
+        margin-bottom: 10px;
+    }
+    
+    .pagination {
+        margin-top: 30px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .pagination a,
+    .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #667eea;
+    }
+    
+    .pagination a:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .pagination .current {
+        background-color: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .btn-sync {
+        background-color: #10b981;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .btn-sync:hover {
+        background-color: #059669;
+        transform: translateY(-2px);
+    }
+    
+    .btn-sync:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stat-card .stat-label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 5px;
+    }
+    
+    .sync-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        max-width: 400px;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .sync-notification.success {
+        border-left: 4px solid #10b981;
+    }
+    
+    .sync-notification.error {
+        border-left: 4px solid #ef4444;
+    }
+    
+    .sync-notification .close-btn {
+        float: right;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #9ca3af;
+    }
+    
+    /* IP Telefon Jadval - Yangi Dizayn */
+    .ip-phone-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-top: 20px;
+    }
+    
+    .ip-phone-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom: none;
+    }
+    
+    .ip-phone-table th {
+        padding: 16px 14px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .ip-phone-table tbody tr {
+        border-bottom: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+    }
+    
+    .ip-phone-table tbody tr:hover {
+        background-color: #f8f9ff;
+        box-shadow: inset 0 0 0 1px #e5e7eb;
+    }
+    
+    .ip-phone-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    
+    .ip-phone-table td {
+        padding: 12px 14px;
+        color: #4b5563;
+        font-size: 0.9rem;
+    }
+    
+    .ip-table-row-number {
+        color: #9ca3af;
+        font-weight: 600;
+        width: 40px;
+    }
+    
+    .ip-table-phone {
+        font-weight: 600;
+        color: #667eea;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    .ip-table-phone:hover {
+        text-decoration: underline;
+    }
+    
+    .ip-table-audio {
+        width: 150px;
+    }
+    
+    .ip-table-operator {
+        font-weight: 500;
+        color: #1f2937;
+    }
+    
+    .ip-table-status {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .status-incoming {
+        background: #dbeafe;
+        color: #0c4a6e;
+    }
+    
+    .status-outgoing {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+    
+    .ip-table-time {
+        color: #6b7280;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    
+    .ip-table-actions {
+        text-align: center;
+        width: 100px;
+    }
+    
+    .btn-analyze {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-analyze:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-analyze:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    /* AI Analiz Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.4s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 15px;
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 1.5rem;
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #9ca3af;
+        padding: 0;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .modal-close:hover {
+        color: #1f2937;
+    }
+    
+    .modal-body {
+        margin: 20px 0;
+    }
+    
+    .analyze-info {
+        background: #f0f9ff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 15px;
+    }
+    
+    .analyze-info-label {
+        color: #6b7280;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .analyze-info-value {
+        color: #1f2937;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+    
+    .analyze-loading {
+        text-align: center;
+        padding: 40px 20px;
+    }
+    
+    .spinner {
+        border: 4px solid #f0f0f0;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .analyze-result {
+        background: #f9fafb;
+        padding: 15px;
+        border-radius: 8px;
+        line-height: 1.6;
+        color: #374151;
+    }
+    
+    .analyze-result h3 {
+        margin: 0 0 10px 0;
+        color: #1f2937;
+    }
+    
+    /* AI Analiz Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.4s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #167eea;
+        padding-bottom: 15px;
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 1.5rem;
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #9ca3af;
+        padding: 0;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .modal-close:hover {
+        color: #1f2937;
+    }
+    
+    .modal-body {
+        margin: 20px 0;
+    }
+    
+    .analyze-info {
+        background: #f0f9ff;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 15px;
+    }
+    
+    .analyze-info-label {
+        color: #6b7280;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .analyze-info-value {
+        color: #1f2937;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+    
+    .analyze-loading {
+        text-align: center;
+        padding: 40px 20px;
+    }
+    
+    .spinner {
+        border: 4px solid #f0f0f0;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .analyze-result {
+        background: #f9fafb;
+        padding: 15px;
+        border-radius: 8px;
+        line-height: 1.6;
+        color: #374151;
+    }
+    
+    .analyze-result h3 {
+        margin: 0 0 10px 0;
+        color: #1f2937;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calls-container">
+    <div class="section-header">
+        <h2>📞 IP Telefon Qo'ng'iroqlari</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="syncBtn" class="btn-sync" title="CRM dan qo'ng'iroqlarni sync qilish">
+                🔄 Sync
+            </button>
+            <span class="connection-badge {% if crm_connected %}connected{% else %}disconnected{% endif %}">
+                {% if crm_connected %}
+                    ✓ CRM ulangan
+                {% else %}
+                    ✗ CRM ulanmagan
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div id="statsContainer" style="display: none; margin-bottom: 20px;"></div>
+
+    {% if error_message %}
+    <div class="error-alert">
+        <strong>❌ Xato:</strong> {{ error_message }}
+        <br><small>Admin paneldan CRM konfiguratsiyasini tekshiring: <a href="/admin/home/crmconfiguration/" style="color: #667eea;">/admin/home/crmconfiguration/</a></small>
+    </div>
+    {% endif %}
+
+    <form method="get" class="filters">
+        <h3>🔍 Qo'ng'iroqlarni filtrlash</h3>
+        
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="phone">Telefon raqam</label>
+                <input type="text" name="phone" id="phone" placeholder="+998..." value="{{ request.GET.phone }}">
+            </div>
+            <div class="filter-group">
+                <label for="search">Qidiruv</label>
+                <input type="text" name="search" id="search" placeholder="Operator yoki mijoz nomi" value="{{ request.GET.search }}">
+            </div>
+            <div class="filter-group">
+                <label for="treeName">Qo'ng'iroq turi</label>
+                <select name="treeName" id="treeName">
+                    <option value="">-- Barcha --</option>
+                    <option value="Kiruvchi" {% if request.GET.treeName == 'Kiruvchi' %}selected{% endif %}>
+                        📥 Kiruvchi
+                    </option>
+                    <option value="Chiquvchi" {% if request.GET.treeName == 'Chiquvchi' %}selected{% endif %}>
+                        📤 Chiquvchi
+                    </option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="operator">Operator</label>
+                <input type="text" name="operator" id="operator" placeholder="205, 204, all..." value="{{ request.GET.operator }}">
+            </div>
+        </div>
+
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="page_size">Bir sahifada</label>
+                <select name="page_size" id="page_size">
+                    <option value="20" {% if request.GET.page_size == '20' %}selected{% endif %}>20</option>
+                    <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+                    <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="ordering">Tartiblash</label>
+                <select name="ordering" id="ordering">
+                    <option value="-timestamp" {% if request.GET.ordering == '-timestamp' %}selected{% endif %}>
+                        Eng yangi birinchi
+                    </option>
+                    <option value="timestamp" {% if request.GET.ordering == 'timestamp' %}selected{% endif %}>
+                        Eng eski birinchi
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-submit">
+            <button type="submit" class="btn-apply">🔍 Qidiruv</button>
+            <a href="{% url 'operators_analys:ip_calls' %}" style="padding: 10px 20px; background-color: #e5e7eb; color: #374151; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                ↺ Tozalash
+            </a>
+        </div>
+    </form>
+
+    {% if calls %}
+    <table class="ip-phone-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">T/R</th>
+                <th style="width: 25%;">MIJOZ</th>
+                <th style="width: 20%;">SUHBAT</th>
+                <th style="width: 20%;">OPERATOR</th>
+                <th style="width: 15%;">HOLAT</th>
+                <th style="width: 12%;">VAQT</th>
+                <th style="width: 8%;">AMAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for call in calls %}
+            <tr>
+                <td class="ip-table-row-number">{{ forloop.counter }}</td>
+                <td>
+                    <a href="tel:{{ call.phone }}" class="ip-table-phone">
+                        🔵 {{ call.phone }}
+                    </a>
+                    {% if call.client_name %}
+                        <div style="color: #9ca3af; font-size: 0.8rem; margin-top: 2px;">{{ call.client_name }}</div>
+                    {% endif %}
+                </td>
+                <td class="ip-table-audio">
+                    {% if call.call_record_link %}
+                        <audio controls style="width: 100%; height: 32px; border-radius: 6px;">
+                            <source src="{{ call.call_record_link }}" type="audio/mpeg">
+                        </audio>
+                    {% else %}
+                        <span style="color: #d1d5db;">Yozuv yo'q</span>
+                    {% endif %}
+                </td>
+                <td class="ip-table-operator">{{ call.operator_name|default:"—" }}</td>
+                <td>
+                    <span class="ip-table-status {% if 'Kiruvchi' in call.treeName %}status-incoming{% else %}status-outgoing{% endif %}">
+                        {% if 'Kiruvchi' in call.treeName %}
+                            📥 Kiruvchi
+                        {% else %}
+                            📤 Chiquvchi
+                        {% endif %}
+                    </span>
+                </td>
+                <td class="ip-table-time">
+                    {{ call.date_time|default:call.timestamp }}
+                </td>
+                <td class="ip-table-actions">
+                    <button class="btn-analyze" onclick="openAnalyzeModal({{ call.id }}, '{{ call.phone }}', '{{ call.operator_name }}')">
+                        🤖 Analiz
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if request.GET.page > 1 or next %}
+    <div class="pagination">
+        {% if request.GET.page > 1 %}
+            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">«</a>
+            <a href="?page={{ request.GET.page|add:'-1' }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">‹</a>
+        {% endif %}
+        
+        <span class="current">Sahifa {{ request.GET.page|default:1 }} / {{ total_pages|default:1 }}</span>
+        
+        {% if next %}
+            <a href="?page={{ request.GET.page|add:1 }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <h3>Qo'ng'iroq topilmadi</h3>
+        <p>Filterlarni o'zgartirming yoki CRM ga ulanganligini tekshiring.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- AI Analiz Modal -->
+<div id="analyzeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🤖 AI Analiz</h2>
+            <button class="modal-close" onclick="closeAnalyzeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="analyze-info">
+                <div class="analyze-info-label">Telefon</div>
+                <div class="analyze-info-value" id="analyzePhone">—</div>
+            </div>
+            
+            <div class="analyze-info">
+                <div class="analyze-info-label">Operator</div>
+                <div class="analyze-info-value" id="analyzeOperator">—</div>
+            </div>
+            
+            <div id="analyzeLoadingDiv" class="analyze-loading" style="display: none;">
+                <div class="spinner"></div>
+                <p style="color: #6b7280; margin: 0;">Tez orada analiz natijasi chiqadi...</p>
+            </div>
+            
+            <div id="analyzeResultDiv" class="analyze-result" style="display: none;">
+                <h3>📊 Analiz Natijasi</h3>
+                <div id="analyzeResultText"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sync SIP Calls funksiyasi
+document.addEventListener('DOMContentLoaded', function() {
+    const syncBtn = document.getElementById('syncBtn');
+    const statsContainer = document.getElementById('statsContainer');
+    
+    if (!syncBtn) return;
+    
+    // Stats yuklash
+    function loadStats() {
+        fetch('{% url "operators_analys:sip_stats" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const stats = data.stats;
+                    let html = '<div class="stats-grid">';
+                    html += `<div class="stat-card"><div class="stat-value">${stats.total}</div><div class="stat-label">Jami Qo'ng'iroq</div></div>`;
+                    html += `<div class="stat-card"><div class="stat-value" style="color: #10b981;">${stats.answered}</div><div class="stat-label">Javob Berilgan</div></div>`;
+                    html += `<div class="stat-card"><div class="stat-value" style="color: #ef4444;">${stats.missed}</div><div class="stat-label">Javob Berilmagan</div></div>`;
+                    html += `<div class="stat-card"><div class="stat-value" style="color: #f59e0b;">${stats.incoming}</div><div class="stat-label">Kiruvchi</div></div>`;
+                    html += `<div class="stat-card"><div class="stat-value" style="color: #8b5cf6;">${stats.outgoing}</div><div class="stat-label">Chiquvchi</div></div>`;
+                    html += '</div>';
+                    
+                    statsContainer.innerHTML = html;
+                    statsContainer.style.display = 'block';
+                }
+            })
+            .catch(error => console.error('Stats yuklash xatosi:', error));
+    }
+    
+    // Sync tugmasi bosilganda
+    syncBtn.addEventListener('click', function() {
+        syncBtn.disabled = true;
+        syncBtn.textContent = '⏳ Sync qilinmoqda...';
+        
+        fetch('{% url "operators_analys:sync_sip_calls" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            syncBtn.disabled = false;
+            syncBtn.textContent = '🔄 Sync';
+            
+            let message = '';
+            let type = '';
+            
+            if (data.success) {
+                message = `✓ Sync tugadi: +${data.created} yangi, ↻${data.updated} yangilangan`;
+                type = 'success';
+                // Stats yangilash
+                setTimeout(loadStats, 1000);
+                // Sahifani yangilash
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                message = `❌ Xato: ${data.error}`;
+                type = 'error';
+            }
+            
+            showNotification(message, type);
+        })
+        .catch(error => {
+            syncBtn.disabled = false;
+            syncBtn.textContent = '🔄 Sync';
+            showNotification(`❌ Xato: ${error.message}`, 'error');
+        });
+    });
+    
+    // Stats yuklash
+    loadStats();
+});
+
+// Notification ko'rsatish
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `sync-notification ${type}`;
+    notification.innerHTML = `
+        <span class="close-btn" onclick="this.parentElement.remove()">✕</span>
+        <div>${message}</div>
+    `;
+    document.body.appendChild(notification);
+    
+    // 5 sekunddan keyin o'chirish
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// CSRF token olish
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Modal tashqarida bosilganda yopish
+window.onclick = function(event) {
+    const modal = document.getElementById('analyzeModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+function openAnalyzeModal(callId, phone, operator) {
+    document.getElementById('analyzePhone').textContent = phone;
+    document.getElementById('analyzeOperator').textContent = operator || '—';
+    
+    const modal = document.getElementById('analyzeModal');
+    modal.style.display = 'block';
+    
+    // Loading ko'rsatish
+    document.getElementById('analyzeLoadingDiv').style.display = 'block';
+    document.getElementById('analyzeResultDiv').style.display = 'none';
+    
+    // 2 sekund kutib, keyin natija chiqarish
+    setTimeout(() => {
+        showAnalyzeResult(phone, operator, callId);
+    }, 2000);
+}
+
+function closeAnalyzeModal() {
+    document.getElementById('analyzeModal').style.display = 'none';
+}
+
+function showAnalyzeResult(phone, operator, callId) {
+    document.getElementById('analyzeLoadingDiv').style.display = 'none';
+    document.getElementById('analyzeResultDiv').style.display = 'block';
+    
+    // Mock AI natija
+    const analysisText = `
+        <p><strong>📞 Qo'ng'iroq Tahlili:</strong></p>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+            <li><strong>Telefon:</strong> ${phone}</li>
+            <li><strong>Operator:</strong> ${operator || 'Noma\'lum'}</li>
+            <li><strong>Qo'ng'iroq Turi:</strong> Kiruvchi qo'ng'iroq</li>
+            <li><strong>Sifat:</strong> Yaxshi (Shutsiz ijro etildi)</li>
+            <li><strong>Davomiyligi:</strong> 1:08</li>
+        </ul>
+        <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+            <strong>✨ Xulosa:</strong> Qo'ng'iroq muvaffaqiyatli yakunlandi. 
+            Operator sifatli xizmat ko'rsatdi.
+        </p>
+    `;
+    
+    document.getElementById('analyzeResultText').innerHTML = analysisText;
+}
+
+// Modal tashqarida bosilganda yopish
+window.onclick = function(event) {
+    const modal = document.getElementById('analyzeModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

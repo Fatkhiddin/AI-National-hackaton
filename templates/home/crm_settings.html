@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+
+{% block title %}CRM Sozlamalari - RoofAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    .settings-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .settings-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 10px;
+    }
+    
+    .settings-header p {
+        color: #6b7280;
+        font-size: 1.1rem;
+    }
+    
+    .settings-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+    }
+    
+    .form-group-custom {
+        margin-bottom: 25px;
+    }
+    
+    .form-group-custom label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+    
+    .form-group-custom input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-group-custom input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-helptext {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+    
+    .status-section {
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .status-section h3 {
+        margin: 0 0 15px 0;
+        color: #374151;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .status-item:last-child {
+        border-bottom: none;
+    }
+    
+    .status-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .status-value {
+        color: #1f2937;
+        font-weight: 600;
+    }
+    
+    .status-connected {
+        color: #10b981;
+    }
+    
+    .status-disconnected {
+        color: #ef4444;
+    }
+    
+    .button-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-save {
+        flex: 1;
+        min-width: 150px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-test {
+        flex: 1;
+        min-width: 150px;
+        padding: 12px 20px;
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-test:hover {
+        background: #f3f4f6;
+        transform: translateY(-2px);
+    }
+    
+    .btn-test:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .loader {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .test-result {
+        display: none;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        font-weight: 600;
+    }
+    
+    .test-result.success {
+        background: #d1fae5;
+        color: #065f46;
+        border-left: 4px solid #10b981;
+    }
+    
+    .test-result.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border-left: 4px solid #ef4444;
+    }
+    
+    .error-list {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0 0 0;
+    }
+    
+    .error-list li {
+        padding: 5px 0;
+        color: #991b1b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1>⚙️ CRM Sozlamalari</h1>
+        <p>Megapolis CRM bilan ulanish uchun ma'lumotlarni kiritilng</p>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Ulanish Holati -->
+    <div class="settings-card">
+        <div class="status-section">
+            <h3>📊 Ulanish Holatі</h3>
+            <div class="status-item">
+                <span class="status-label">Holat:</span>
+                <span class="status-value" id="connection-status">
+                    {% if config.is_connected %}
+                    <span class="status-connected">✓ Ulangan</span>
+                    {% else %}
+                    <span class="status-disconnected">✗ Ulanmagan</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">CRM URL:</span>
+                <span class="status-value">{{ config.crm_url|default:"--" }}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Token:</span>
+                <span class="status-value">
+                    {% if config.access_token %}
+                    <span class="status-connected">✓ Mavjud</span>
+                    {% else %}
+                    <span class="status-disconnected">✗ Yo'q</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Oxirgi ulanish:</span>
+                <span class="status-value">{{ config.last_connection_attempt|date:"d.m.Y H:i" }}</span>
+            </div>
+            {% if config.connection_error_message %}
+            <div class="status-item">
+                <span class="status-label">Xato:</span>
+                <span class="status-value" style="color: #ef4444;">{{ config.connection_error_message|truncatewords:20 }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CRM Konfiguratsiya Formi -->
+    <div class="settings-card">
+        <h2 style="margin: 0 0 25px 0; color: #1f2937; font-size: 1.3rem;">🔐 CRM Ma'lumotlari</h2>
+        
+        <form method="post" id="crm-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- CRM URL -->
+            <div class="form-group-custom">
+                <label for="{{ form.crm_url.id_for_label }}">CRM API URL</label>
+                {{ form.crm_url }}
+                {% if form.crm_url.errors %}
+                <div class="alert alert-danger mt-2">
+                    <ul class="error-list">
+                        {% for error in form.crm_url.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <small class="form-helptext">Masalan: https://megapolis1.uz/api/</small>
+            </div>
+
+            <!-- Username -->
+            <div class="form-group-custom">
+                <label for="{{ form.username.id_for_label }}">Foydalanuvchi nomi</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="alert alert-danger mt-2">
+                    <ul class="error-list">
+                        {% for error in form.username.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Password -->
+            <div class="form-group-custom">
+                <label for="{{ form.password.id_for_label }}">Parol</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <div class="alert alert-danger mt-2">
+                    <ul class="error-list">
+                        {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <small class="form-helptext">{{ form.password.help_text }}</small>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button type="submit" class="btn-save">💾 Saqlash</button>
+                <button type="button" class="btn-test" id="test-btn" onclick="testCRMConnection()">
+                    🧪 Ulanishni Tekshirish
+                </button>
+            </div>
+
+            <!-- Test Result -->
+            <div id="test-result" class="test-result"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+function testCRMConnection() {
+    const btn = document.getElementById('test-btn');
+    const resultDiv = document.getElementById('test-result');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>Tekshirilmoqda...';
+    resultDiv.style.display = 'none';
+    
+    fetch('{% url "home:crm_test_connection" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result ' + (data.success ? 'success' : 'error');
+        resultDiv.innerHTML = (data.success ? '✓ ' : '✗ ') + data.message;
+    })
+    .catch(error => {
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test-result error';
+        resultDiv.innerHTML = '✗ Xato: ' + error.message;
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🧪 Ulanishni Tekshirish';
+    });
+}
+
+// Avtomatik holat yangilash
+function updateCRMStatus() {
+    fetch('{% url "home:crm_status" %}')
+    .then(response => response.json())
+    .then(data => {
+        const statusEl = document.getElementById('connection-status');
+        if (data.is_connected) {
+            statusEl.innerHTML = '<span class="status-connected">✓ Ulangan</span>';
+        } else {
+            statusEl.innerHTML = '<span class="status-disconnected">✗ Ulanmagan</span>';
+        }
+    });
+}
+
+// Har 30 sekundda holat yangilash
+setInterval(updateCRMStatus, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - RoofAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .login-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 450px;
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .login-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+    
+    .login-header p {
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+    
+    .login-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .login-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+    
+    .errorlist {
+        list-style: none;
+        padding: 10px;
+        background-color: #fee;
+        border-left: 4px solid #f66;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        color: #c33;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>🏢</h1>
+            <h1>RoofAI</h1>
+            <p>AI National Hackaton</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="alert alert-danger mt-2">
+                    {{ form.username.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <div class="alert alert-danger mt-2">
+                    {{ form.password.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">Login</button>
+        </form>
+
+        <div class="login-footer">
+            <p>Don't have an account? <a href="{% url 'user:register' %}">Register here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

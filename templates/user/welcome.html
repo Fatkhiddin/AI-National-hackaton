@@ -1,0 +1,452 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to RoofAI - RoofAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="rgba(255,255,255,0.05)"><path d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></g></g></svg>');
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    .welcome-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 80px);
+        padding: 40px 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .welcome-hero {
+        text-align: center;
+        color: white;
+        margin-bottom: 60px;
+        animation: slideInDown 0.8s ease-out;
+    }
+    
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .welcome-icon {
+        font-size: 6rem;
+        margin-bottom: 20px;
+        animation: float 3s ease-in-out infinite;
+        display: inline-block;
+        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+    }
+    
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-30px);
+        }
+    }
+    
+    .welcome-title {
+        font-size: 4rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        letter-spacing: -1px;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1.4rem;
+        opacity: 0.95;
+        margin-bottom: 0;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+    }
+    
+    .features-section {
+        width: 100%;
+        max-width: 1200px;
+        margin-bottom: 40px;
+    }
+    
+    .features-title {
+        color: white;
+        text-align: center;
+        font-size: 1.3rem;
+        margin-bottom: 30px;
+        opacity: 0.95;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+    
+    .feature-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px 25px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        cursor: pointer;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .feature-card:nth-child(1) { animation-delay: 0.1s; }
+    .feature-card:nth-child(2) { animation-delay: 0.2s; }
+    .feature-card:nth-child(3) { animation-delay: 0.3s; }
+    .feature-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .feature-card:hover::before {
+        left: 100%;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-15px);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+    }
+    
+    .feature-icon {
+        font-size: 3.5rem;
+        margin-bottom: 15px;
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+    
+    .feature-card:hover .feature-icon {
+        transform: scale(1.2) rotate(5deg);
+    }
+    
+    .feature-text {
+        font-size: 1.1rem;
+        color: #374151;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .welcome-card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+        max-width: 700px;
+        width: 100%;
+        animation: slideInUp 0.8s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .welcome-message {
+        color: #6b7280;
+        font-size: 1rem;
+        margin-bottom: 25px;
+        line-height: 1.6;
+    }
+    
+    .user-info {
+        background: linear-gradient(135deg, #f0f4ff 0%, #f9f5ff 100%);
+        padding: 25px;
+        border-radius: 14px;
+        margin: 25px 0;
+        text-align: left;
+        border-left: 4px solid #667eea;
+    }
+    
+    .user-info p {
+        margin: 10px 0;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+    
+    .user-info strong {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+    
+    .welcome-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+    
+    .btn-welcome {
+        padding: 14px 32px;
+        font-weight: 700;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        border: none;
+    }
+    
+    .btn-welcome.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-welcome.primary:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-welcome.secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    
+    .btn-welcome.secondary:hover {
+        background: #f0f4ff;
+        color: #667eea;
+        text-decoration: none;
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+    }
+    
+    .crm-status {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    .crm-status-text {
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    
+    .crm-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+    
+    .crm-badge.connected {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .crm-badge.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    @media (max-width: 768px) {
+        .welcome-title {
+            font-size: 2.5rem;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.1rem;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+        }
+        
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .feature-card {
+            padding: 20px 15px;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+        }
+        
+        .welcome-card {
+            padding: 25px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-container">
+    <!-- Hero Section -->
+    <div class="welcome-hero">
+        <div class="welcome-icon">🏢</div>
+        <h1 class="welcome-title">{{ app_name }}</h1>
+        <p class="welcome-subtitle">✨ AI National Hackaton Platform</p>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="features-section">
+        <div class="features-title">Platform Features</div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <p class="feature-text">Market Analysis</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <p class="feature-text">Operators</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <p class="feature-text">Telegram AI</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚙️</div>
+                <p class="feature-text">Settings</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="welcome-card">
+        <p class="welcome-message">
+            👋 Welcome to <strong>RoofAI</strong>! You are now successfully logged in. 
+            Let's explore amazing features and build something incredible together.
+        </p>
+        
+        <div class="user-info">
+            <p><strong>👤 Username:</strong> {{ user.username }}</p>
+            <p><strong>📧 Email:</strong> {{ user.email }}</p>
+            <p><strong>👨‍💼 Full Name:</strong> {{ user.first_name|default:"—" }} {{ user.last_name|default:"" }}</p>
+            <p><strong>🎖️ Role:</strong> <span class="role-badge">{{ user.role|capfirst }}</span></p>
+        </div>
+
+        <!-- CRM Status -->
+        <div class="crm-status">
+            <span class="crm-status-text">🔌 CRM Connection Status:</span>
+            <span class="crm-badge disconnected" id="crm-status-badge">⚠️ Not Configured</span>
+        </div>
+        
+        <div class="welcome-buttons">
+            <a href="{% url 'home:crm_settings' %}" class="btn-welcome primary">
+                ⚙️ CRM Settings
+            </a>
+            <a href="{% url 'operators_analys:ip_calls' %}" class="btn-welcome primary">
+                📞 IP Calls
+            </a>
+            <a href="{% url 'user:logout' %}" class="btn-welcome secondary">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// CRM status ni check qilish
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "home:crm_status" %}')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('crm-status-badge');
+            if (data.is_connected) {
+                badge.textContent = '✅ Connected';
+                badge.className = 'crm-badge connected';
+            } else {
+                badge.textContent = '❌ Disconnected';
+                badge.className = 'crm-badge disconnected';
+            }
+        })
+        .catch(err => console.log('CRM status check failed'));
+});
+
+// Auto refresh every 30 seconds
+setInterval(() => {
+    fetch('{% url "home:crm_status" %}')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('crm-status-badge');
+            if (data.is_connected) {
+                badge.textContent = '✅ Connected';
+                badge.className = 'crm-badge connected';
+            }
+        })
+        .catch(err => {});
+}, 30000);
+</script>
+{% endblock %}

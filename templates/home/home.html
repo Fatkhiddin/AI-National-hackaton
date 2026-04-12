@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - RoofAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="rgba(255,255,255,0.05)"><path d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></g></g></svg>');
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    .home-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 80px);
+        padding: 40px 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .home-hero {
+        text-align: center;
+        color: white;
+        margin-bottom: 50px;
+        animation: slideInDown 0.8s ease-out;
+    }
+    
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .home-icon {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        animation: float 3s ease-in-out infinite;
+        display: inline-block;
+        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+    }
+    
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-30px);
+        }
+    }
+    
+    .home-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 15px;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        letter-spacing: -1px;
+    }
+    
+    .home-subtitle {
+        font-size: 1.3rem;
+        opacity: 0.95;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+    }
+    
+    .content-section {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .quick-access {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 25px;
+        margin-bottom: 50px;
+    }
+    
+    .access-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px 25px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        cursor: pointer;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .access-card:nth-child(1) { animation-delay: 0.1s; }
+    .access-card:nth-child(2) { animation-delay: 0.2s; }
+    .access-card:nth-child(3) { animation-delay: 0.3s; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .access-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .access-card:hover::before {
+        left: 100%;
+    }
+    
+    .access-card:hover {
+        transform: translateY(-15px);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+    }
+    
+    .access-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+    
+    .access-card:hover .access-icon {
+        transform: scale(1.2) rotate(5deg);
+    }
+    
+    .access-text {
+        font-size: 1rem;
+        color: #374151;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .stats-section {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+        margin-bottom: 50px;
+        animation: slideInUp 0.8s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stats-title {
+        font-size: 1.4rem;
+        color: #1f2937;
+        margin-bottom: 30px;
+        font-weight: 700;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 25px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #f0f4ff 0%, #f9f5ff 100%);
+        border-radius: 12px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    
+    .info-box {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-left: 4px solid #667eea;
+        padding: 20px;
+        border-radius: 10px;
+        color: #374151;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    
+    .info-box strong {
+        color: #667eea;
+    }
+    
+    .coming-soon {
+        text-align: center;
+        padding: 40px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .coming-soon-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    .coming-soon-title {
+        font-size: 1.5rem;
+        color: #1f2937;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    
+    .coming-soon-text {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .home-title {
+            font-size: 2.5rem;
+        }
+        
+        .home-subtitle {
+            font-size: 1rem;
+        }
+        
+        .home-icon {
+            font-size: 4rem;
+        }
+        
+        .quick-access {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <!-- Hero Section -->
+    <div class="home-hero">
+        <div class="home-icon">🏠</div>
+        <h1 class="home-title">Dashboard</h1>
+        <p class="home-subtitle">Welcome back to RoofAI</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-section">
+        <!-- Quick Access Cards -->
+        <div class="quick-access">
+            <a href="{% url 'home:crm_settings' %}" class="access-card">
+                <div class="access-icon">⚙️</div>
+                <p class="access-text">CRM Settings</p>
+            </a>
+            <a href="{% url 'operators_analys:ip_calls' %}" class="access-card">
+                <div class="access-icon">📞</div>
+                <p class="access-text">IP Calls</p>
+            </a>
+            <a href="#" class="access-card">
+                <div class="access-icon">📊</div>
+                <p class="access-text">Analytics</p>
+            </a>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-section">
+            <h2 class="stats-title">📈 Platform Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Active Calls</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Operators</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Customers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">0</div>
+                    <div class="stat-label">Avg Duration</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            💡 <strong>Tip:</strong> Configure your CRM settings first to start tracking IP calls and viewing analytics from your Megapolis CRM system.
+        </div>
+
+        <!-- Coming Soon Section -->
+        <div class="coming-soon">
+            <div class="coming-soon-icon">🚀</div>
+            <h3 class="coming-soon-title">More Features Coming Soon!</h3>
+            <p class="coming-soon-text">We're working on exciting new features to enhance your experience with RoofAI.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

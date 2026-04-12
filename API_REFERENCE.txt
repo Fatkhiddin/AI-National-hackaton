@@ -1,0 +1,728 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║              MEGAPOLIS CRM — TO'LIQ API QO'LLANMASI                            ║
+║              Tayyorlangan: 2025 yil                                             ║
+║              Base URL: https://megapolis1.uz/api/                               ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MUNDARIJA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. AUTENTIFIKATSIYA
+     1.1 Ro'yxatdan o'tish (Register)
+     1.2 Kirish (Login) — JWT token olish
+     1.3 Tokenni yangilash (Refresh)
+     1.4 Mening profilim (Me)
+
+  2. FOYDALANUVCHI BILAN ISHLASH
+     2.1 Saqlangan obyektlar (toggle)
+     2.2 Saqlangan obyektlar ro'yxati
+
+  3. KO'CHMAS MULK OBYEKTLARI (BuildHouse)
+     3.1 Ro'yxat va qidiruv
+     3.2 Bitta obyekt
+     3.3 Barcha filtr parametrlari
+     3.4 Tartiblash (ordering)
+     3.5 Pagination
+
+  4. IP-PHONE — SIP QONG'IROQLAR (SIPCall)
+     4.1 Ro'yxat va qidiruv
+     4.2 Bitta qo'ng'iroq
+     4.3 Filtrlar
+     4.4 Javob formati
+
+  5. LOOKUP (SPRAVOCHNIK) ENDPOINTLAR
+     Manzillar, Kategoriyalar, va boshqa ro'yxatlar
+
+  6. SWAGGER / BROWSABLE API
+
+  7. XATOLIKLAR VA KODLAR
+
+  8. MISOLLAR (cURL, JavaScript Fetch, Python requests)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. AUTENTIFIKATSIYA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Tizim JWT (JSON Web Token) autentifikatsiyasidan foydalanadi.
+  Himoyalangan endpointlarga murojaat qilish uchun:
+
+    Header: Authorization: Bearer <access_token>
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+1.1  RO'YXATDAN O'TISH
+━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : POST  https://megapolis1.uz/api/register/
+  Auth   : Yo'q (hammaga ochiq)
+
+  So'rov (Request Body — JSON):
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "username": "john_doe",                  │
+  │   "password": "secretPass123",             │
+  │   "full_name": "John Doe"                  │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+  Muvaffaqiyatli javob (201 Created):
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "access_token":  "<JWT access token>",   │
+  │   "refresh_token": "<JWT refresh token>"   │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+  Xatoliklar:
+    400 — username, full_name yoki parol bo'sh
+    400 — bu username allaqachon mavjud
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+1.2  KIRISH (LOGIN)
+━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : POST  https://megapolis1.uz/api/login/
+  Auth   : Yo'q (hammaga ochiq)
+
+  So'rov:
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "username": "john_doe",                  │
+  │   "password": "secretPass123"              │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+  Muvaffaqiyatli javob (200 OK):
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "access_token":  "<JWT access token>",   │
+  │   "refresh_token": "<JWT refresh token>"   │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+  Xatoliklar:
+    400 — username yoki parol bo'sh
+    401 — noto'g'ri username yoki parol
+
+  MUHIM: access_token vaqti cheklangan (odatda 60 daqiqa).
+         Muddati o'tganda refresh endpoint orqali yangilang.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+1.3  TOKENNI YANGILASH
+━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : POST  https://megapolis1.uz/api/token/refresh/
+  Auth   : Yo'q
+
+  So'rov:
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "refresh": "<refresh_token>"             │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+  Javob (200 OK):
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "access": "<yangi access_token>"         │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+1.4  MENING PROFILIM
+━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : GET   https://megapolis1.uz/api/me/
+  Auth   : JWT kerak  (Authorization: Bearer <token>)
+
+  Javob (200 OK):
+  ┌─────────────────────────────────────────────┐
+  │ {                                           │
+  │   "id":        1,                           │
+  │   "username":  "john_doe",                 │
+  │   "email":     "john@example.com",         │
+  │   "full_name": "John Doe",                 │
+  │   "phone":     "+998901234567"             │
+  │ }                                           │
+  └─────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. FOYDALANUVCHI BILAN ISHLASH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.1  SAQLANGAN OBYEKT (TOGGLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : POST  https://megapolis1.uz/api/user/saved-object/<object_id>/
+  Auth   : JWT kerak
+
+  Birinchi marta chaqirilganda → saqlanadi (201 Created)
+  Ikkinchi marta chaqirilganda → o'chiriladi (204 No Content)
+
+  Javob (201):
+  ┌──────────────────────────────────┐
+  │ { "message": "Saved successfully" }│
+  └──────────────────────────────────┘
+
+  Javob (204):
+  ┌───────────────────────────────────┐
+  │ { "message": "Deleted successfully"}│
+  └───────────────────────────────────┘
+
+  Xatoliklar:
+    404 — bunday ID li obyekt topilmadi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.2  SAQLANGAN OBYEKTLAR RO'YXATI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  URL    : GET   https://megapolis1.uz/api/user/saved-objects/
+  Auth   : JWT kerak
+
+  Javob: BuildHouse obyektlari ro'yxati (3-bo'lim bilan bir xil format)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. KO'CHMAS MULK OBYEKTLARI (BuildHouse)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Base URL: https://megapolis1.uz/api/objects/
+  Auth    : JWT KERAK yoki RO'YXATDAN O'TMAGAN (read-only uchun)
+            (IsAuthenticatedOrReadOnly — o'qish uchun token shart emas)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.1  RO'YXAT VA QIDIRUV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  GET  https://megapolis1.uz/api/objects/
+
+  Oddiy misollar:
+    /api/objects/                          → Barcha aktiv obyektlar (sahifa 1)
+    /api/objects/?page=2                   → 2-sahifa
+    /api/objects/?page_size=50             → 50 ta bir sahifada
+    /api/objects/?search=toshkent         → "toshkent" bo'yicha qidiruv
+    /api/objects/?category=1              → Kategoriya ID=1
+    /api/objects/?rooms_numbers=3         → 3 xonali
+    /api/objects/?min_price=50000&max_price=150000  → Narx oralig'i
+    /api/objects/?ordering=-price_starting         → Narx bo'yicha (kamayish)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.2  BITTA OBYEKT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  GET  https://megapolis1.uz/api/objects/<id>/
+
+  Masalan: /api/objects/42/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.3  BARCHA FILTR PARAMETRLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Parametr nomi         | Turi    | Tavsif
+  ─────────────────────────────────────────────────────────────────────────
+  rooms_numbers         | int     | Xonalar soni
+  floor                 | int     | Qavat
+  floor_build           | int     | Bino qavatlar soni
+  min_area              | float   | Minimum umumiy maydon (m²)
+  max_area              | float   | Maksimum umumiy maydon (m²)
+  living_area           | float   | Yashar maydon
+  usable_area           | float   | Foydali maydon
+  suggested_area        | float   | Taklif etiladigan maydon
+  min_price             | float   | Minimum narx (price_starting)
+  max_price             | float   | Maksimum narx (price_starting)
+  category              | int     | Kategoriya ID
+  sale_type             | int     | Sotuv turi ID
+  rent                  | int     | Ijara turi ID
+  sub_category          | int     | Ichki kategoriya ID
+  state_repair          | int     | Ta'mir holati ID
+  balcony               | int     | Balkon ID
+  location_object       | int     | Joylashuv ob'ekti ID
+  layout_type           | int     | Rejalayish turi ID
+  elevator              | int     | Lift ID
+  year_construction     | int     | Qurilish yili
+  car_place             | int     | Avtomobil joylari
+  bathroom              | int     | Vannaxona ID
+  parking               | int     | Parking ID
+  furniture             | int     | Mebel ID
+  ceiling_height        | float   | Shift balandligi
+  bedrooms_num          | int     | Yotoqxonalar soni
+  heating_system        | int     | Isitish tizimi ID
+  gas                   | int     | Gaz ID
+  view_window           | int     | Deraza ko'rinishi ID
+  air_conditioning_system| int    | Konditsioner ID
+  type_building         | int     | Bino turi ID
+  number_acres          | float   | Gektar soni
+  house_condition       | int     | Uy holati ID
+  house_location        | int     | Uy joylashuvi ID
+  pool                  | int     | Basseyn ID
+  water                 | int     | Suv ID
+  electricity           | int     | Elektr ID
+  garage                | int     | Garaj ID
+  sewerage              | bool    | Kanalizatsiya (true/false)
+  property_type         | int     | Mulk turi ID
+  type_license          | int     | Litsenziya turi ID
+  type_land_plot        | int     | Yer uchastkasi turi ID
+  distance_to_city      | float   | Shaharga masofa (km)
+  access_roads          | int     | Yo'llar ID
+  location_of_object    | int     | Ob'ekt joylashuvi ID
+  object_status         | int     | Ob'ekt statusi ID
+  railway_branch        | bool    | Temir yo'l filiali (true/false)
+  number_buildings      | int     | Binolar soni
+  object_type           | int     | Ob'ekt turi ID
+  objects_status_earth  | int     | Yer statusi ID
+  smart_home            | bool    | Aqlli uy (true/false)
+  inside_has            | int     | Ichida nima bor ID
+  nearby_has            | int     | Yaqinida nima bor ID
+  search                | string  | Matn qidiruvi (nom, manzil, kategoriya va b.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.4  TARTIBLASH (ORDERING)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Parametr: ?ordering=<maydon>
+
+  Mavjud maydonlar:
+    price_starting     → Narx bo'yicha (o'sish)
+    -price_starting    → Narx bo'yicha (kamayish)
+    total_area         → Maydon bo'yicha (o'sish)
+    -total_area        → Maydon bo'yicha (kamayish)
+    year_construction  → Yil bo'yicha (o'sish)
+    -year_construction → Yil bo'yicha (kamayish)
+    created_at         → Qo'shilgan vaqt (o'sish)
+    -created_at        → Qo'shilgan vaqt (kamayish) ← DEFAULT
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.5  PAGINATION (SAHIFALASH)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Parametrlar:
+    page          → Sahifa raqami (default: 1)
+    page_size     → Har sahifada nechta (default: 20, max: 100)
+
+  Javob formati:
+  ┌──────────────────────────────────────────────────┐
+  │ {                                                │
+  │   "count":        150,       ← Jami obyektlar   │
+  │   "next":         "...?page=3",                 │
+  │   "previous":     "...?page=1",                 │
+  │   "total_pages":  8,                            │
+  │   "current_page": 2,                            │
+  │   "results": [ ... ]        ← Obyektlar massivi │
+  │ }                                                │
+  └──────────────────────────────────────────────────┘
+
+  Har bir obyekt (results ichida):
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │ {                                                                    │
+  │   "id":                   42,                                        │
+  │   "name":                 "3 xonali kvartira Chilanzar",             │
+  │   "price_starting":       85000,                                     │
+  │   "price_meter":          1200,                                      │
+  │   "total_area":           70.5,                                      │
+  │   "living_area":          45.0,                                      │
+  │   "rooms_numbers":        3,                                         │
+  │   "floor":                5,                                         │
+  │   "floor_build":          9,                                         │
+  │   "year_construction":    2020,                                      │
+  │   "created_at":           "2024-01-15T10:30:00Z",                   │
+  │   "category":             { "id": 1, "name": "Kvartiralar" },       │
+  │   "address":              { "id": 5, "name": "Chilanzar", ... },    │
+  │   "state_repair":         "Evro ta'mir",                            │
+  │   "furniture":            "To'liq mebelь bilan",                    │
+  │   "sale_type":            [{ "id": 1, "name": "Sotiladi" }],        │
+  │   "build_house_images":   [{ "image": "/media/..." }],              │
+  │   ... (barcha maydonlar)                                             │
+  │ }                                                                    │
+  └──────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. IP-PHONE — SIP QONG'IROQLAR (SIPCall)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Base URL: https://megapolis1.uz/api/ip-phone/
+  Auth    : JWT KERAK  (IsAuthenticated — token majburiy)
+  Ma'lumot: Faqat o'z jamoangiz (team) qo'ng'iroqlari ko'rsatiladi.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.1  RO'YXAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  GET  https://megapolis1.uz/api/ip-phone/
+
+  Default: eng yangi qo'ng'iroqlar birinchi (-timestamp)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.2  BITTA QONG'IROQ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  GET  https://megapolis1.uz/api/ip-phone/<id>/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.3  FILTRLAR VA QIDIRUV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Parametr      | Tavsif
+  ──────────────────────────────────────────────────────────────────────
+  operator      | Operator raqami (short_src_num). Masalan: 205
+                | "operator=all" → ichki raqamlar (205,204,203,202) dan
+                |   tashqari barcha qo'ng'iroqlar
+  treeName      | Qo'ng'iroq holati. Masalan: Kiruvchi, Chiquvchi
+  phone         | Telefon raqam bo'yicha qisman qidiruv
+  search        | Umumiy matn qidiruvi (phone, src_num, dst_num, treeName)
+  ordering      | Tartib:
+                |   -timestamp   (default — eng yangi birinchi)
+                |    timestamp   (eng eski birinchi)
+                |   -phone       (telefon kamayish)
+                |    phone       (telefon o'sish)
+
+  Misollar:
+    /api/ip-phone/?operator=205              → Faqat 205 raqamli operator
+    /api/ip-phone/?operator=all              → Barcha tashqi qo'ng'iroqlar
+    /api/ip-phone/?treeName=Kiruvchi        → Kiruvchi qo'ng'iroqlar
+    /api/ip-phone/?phone=+99890             → Raqam bo'yicha qidiruv
+    /api/ip-phone/?search=toshkent          → Matn qidiruvi
+    /api/ip-phone/?ordering=timestamp       → Eski birinchi
+    /api/ip-phone/?operator=205&treeName=Kiruvchi  → Kombinatsiya
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.4  JAVOB FORMATI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ {                                                               │
+  │   "count": 248,                                                 │
+  │   "next":  "...?page=2",                                       │
+  │   "previous": null,                                             │
+  │   "results": [                                                  │
+  │     {                                                           │
+  │       "id":               1,                                    │
+  │       "call_id":          "abc123xyz",                          │
+  │       "event":            "ANSWERED",                           │
+  │       "dst_type":         "operator",                           │
+  │       "dst_num":          "998712345678",                       │
+  │       "short_dst_num":    "205",                                │
+  │       "src_type":         "client",                             │
+  │       "src_num":          "998901234567",                       │
+  │       "short_src_num":    "205",                                │
+  │       "timestamp":        "2024-11-10T08:30:00Z",              │
+  │       "treeName":         "Kiruvchi",                           │
+  │       "treeNumber":       "1",                                  │
+  │       "is_inner_call":    false,                                │
+  │       "call_record_link": "https://.../.mp3",                  │
+  │       "status":           "answered",                           │
+  │       "phone":            "+998901234567",                      │
+  │       "operator_name":    "Alisher Karimov",                   │
+  │       "client_name":      "Botir Rahimov",                     │
+  │       "date_time":        "10.11.2024 08:30",                  │
+  │       "info":             "Kiruvchi | 205 | ..."               │
+  │     }                                                           │
+  │   ]                                                             │
+  │ }                                                               │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Maydonlar tavsifi:
+    call_id           — Qo'ng'iroqning unikal ID si
+    event             — Hodisa turi (ANSWERED, MISSED, BUSY, ...)
+    dst_type          — Qabul qiluvchi turi (operator/client)
+    dst_num           — Qabul qiluvchi to'liq raqami
+    short_dst_num     — Qabul qiluvchi qisqa raqami (masalan: 205)
+    src_type          — Qo'ng'iroq qiluvchi turi
+    src_num           — Qo'ng'iroq qiluvchi to'liq raqami
+    short_src_num     — Qo'ng'iroq qiluvchi qisqa raqami
+    timestamp         — Vaqt (ISO 8601 formatda, UTC)
+    treeName          — Daraxt nomi (Kiruvchi/Chiquvchi/...)
+    treeNumber        — Daraxt raqami
+    is_inner_call     — Ichki qo'ng'iroqmi? (true/false)
+    call_record_link  — Audio yozuv havolasi
+    status            — Status (answered/missed/busy/...)
+    phone             — Asosiy telefon raqam
+    operator_name     — Operator ismi (hisoblangan maydon)
+    client_name       — Mijoz ismi (hisoblangan maydon)
+    date_time         — O'zbekcha formatlangan vaqt (hisoblangan)
+    info              — Qo'ng'iroq haqida qisqa ma'lumot (hisoblangan)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. LOOKUP (SPRAVOCHNIK) ENDPOINTLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Bular oddiy ro'yxatlar — {id, name} formatida qaytaradi.
+  Auth: IsAuthenticatedOrReadOnly (token bo'lmasa ham o'qish mumkin)
+
+  Endpoint URL                              | Ma'lumot
+  ─────────────────────────────────────────────────────────────────────────
+  /api/addresses/                           | Manzillar (id, name, sub, full_address)
+  /api/Categorys/                           | Kategoriyalar
+  /api/SubCategorys/                        | Ichki kategoriyalar
+  /api/Sources/                             | Manbalar
+  /api/Sourses/                             | Manba (2-variant)
+  /api/SaleTypes/                           | Sotuv turlari
+  /api/Rents/                               | Ijara turlari
+  /api/StateRepairs/                        | Ta'mir holatlari
+  /api/Balconys/                            | Balkon turlari
+  /api/LayoutTypes/                         | Rejalayish turlari
+  /api/Furnitures/                          | Mebel turlari
+  /api/Bathrooms/                           | Vannaxona turlari
+  /api/TypeBuildings/                       | Bino turlari
+  /api/Elevators/                           | Lift turlari
+  /api/ViewWindows/                         | Deraza ko'rinish turlari
+  /api/Parkings/                            | Parking turlari
+  /api/InsideHass/                          | Ichida nima bor
+  /api/NearbyHass/                          | Yaqinida nima bor
+  /api/LocationObjects/                     | Joylashuv ob'ektlari
+  /api/Gass/                                | Gaz turlari
+  /api/AirConditioningSystems/              | Konditsioner turlari
+  /api/HouseConditions/                     | Uy holatlari
+  /api/HouseLocations/                      | Uy joylashuvlari
+  /api/Pools/                               | Basseyn turlari
+  /api/Waters/                              | Suv turlari
+  /api/Electrocitys/                        | Elektr turlari
+  /api/Garages/                             | Garaj turlari
+  /api/TypeLicences/                        | Litsenziya turlari
+  /api/TypeLandPlots/                       | Yer uchastkasi turlari
+  /api/AccessRoadss/                        | Yo'llar
+  /api/LocationOfObjects/                   | Ob'ekt joylashuvlari
+  /api/ObjectStatuss/                       | Ob'ekt statuslari
+  /api/PropertyTypes/                       | Mulk turlari
+  /api/ObjectTypes/                         | Ob'ekt turlari
+  /api/ObjectStatusEarths/                  | Yer statuslari
+  /api/ClientTypes/                         | Mijoz turlari
+  /api/ClientStatuss/                       | Mijoz statuslari
+
+  Har biri uchun:
+    GET /api/<endpoint>/      → Ro'yxat
+    GET /api/<endpoint>/<id>/ → Bitta element
+
+  Javob misoli (/api/Categorys/):
+  ┌──────────────────────────────────┐
+  │ [                                │
+  │   { "id": 1, "name": "Kvartira" },│
+  │   { "id": 2, "name": "Uy" },    │
+  │   { "id": 3, "name": "Er" }     │
+  │ ]                                │
+  └──────────────────────────────────┘
+
+  Manzil formati (/api/addresses/):
+  ┌───────────────────────────────────────────────────┐
+  │ [                                                 │
+  │   {                                               │
+  │     "id":           5,                            │
+  │     "name":         "Chilanzar",                 │
+  │     "sub":          "Toshkent",                  │
+  │     "full_address": "Toshkent, Chilanzar"        │
+  │   }                                               │
+  │ ]                                                 │
+  └───────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SWAGGER / BROWSABLE API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Swagger UI    : https://megapolis1.uz/api/swagger/
+  ReDoc         : https://megapolis1.uz/api/redoc/
+  JSON schema   : https://megapolis1.uz/api/swagger.json
+
+  Browsable DRF : https://megapolis1.uz/api/
+  (Brauzerda ochib, barcha endpointlarni vizual sinab ko'rish mumkin)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. XATOLIKLAR VA HTTP KODLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Kod | Ma'no              | Sabab
+  ────────────────────────────────────────────────────────────────
+  200 | OK                 | Muvaffaqiyatli
+  201 | Created            | Yangi resurs yaratildi
+  204 | No Content         | Muvaffaqiyatli, javob yo'q (o'chirish)
+  400 | Bad Request        | So'rov noto'g'ri (maydon yetishmaydi, ...)
+  401 | Unauthorized       | Token yo'q yoki noto'g'ri
+  403 | Forbidden          | Ruxsat yo'q
+  404 | Not Found          | Resurs topilmadi
+  405 | Method Not Allowed | Bu endpoint uchun bu HTTP metod yo'q
+  500 | Server Error       | Server xatosi
+
+  Xato javob misoli:
+  ┌──────────────────────────────────────────────┐
+  │ {                                            │
+  │   "detail": "Authentication credentials     │
+  │              were not provided."            │
+  │ }                                            │
+  └──────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. MISOLLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A) cURL MISOLLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 1. Login va token olish
+curl -X POST https://megapolis1.uz/api/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "12345"}'
+
+# 2. Token bilan obiektlar olish
+curl https://megapolis1.uz/api/objects/ \
+  -H "Authorization: Bearer <access_token>"
+
+# 3. IP-Phone qo'ng'iroqlar (205-operator, faqat kiruvchi)
+curl "https://megapolis1.uz/api/ip-phone/?operator=205&treeName=Kiruvchi" \
+  -H "Authorization: Bearer <access_token>"
+
+# 4. Token yangilash
+curl -X POST https://megapolis1.uz/api/token/refresh/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh": "<refresh_token>"}'
+
+# 5. 3 xonali kvartirani qidirish
+curl "https://megapolis1.uz/api/objects/?rooms_numbers=3&category=1&ordering=-price_starting" \
+  -H "Authorization: Bearer <access_token>"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+B) JAVASCRIPT (Fetch) MISOLLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Login
+const response = await fetch('https://megapolis1.uz/api/login/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'admin', password: '12345' })
+});
+const { access_token, refresh_token } = await response.json();
+localStorage.setItem('token', access_token);
+
+// Obyektlar olish
+const token = localStorage.getItem('token');
+const res = await fetch('https://megapolis1.uz/api/objects/?page=1&page_size=20', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+const data = await res.json();
+console.log(data.results); // Obyektlar massivi
+
+// IP-Phone — barcha tashqi qo'ng'iroqlar
+const calls = await fetch('https://megapolis1.uz/api/ip-phone/?operator=all', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+const callData = await calls.json();
+
+// Saqlangan obyektga toggle
+await fetch('https://megapolis1.uz/api/user/saved-object/42/', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+C) PYTHON (requests) MISOLLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import requests
+
+BASE = "https://megapolis1.uz/api"
+
+# 1. Login
+r = requests.post(f"{BASE}/login/", json={
+    "username": "admin",
+    "password": "12345"
+})
+token = r.json()["access_token"]
+headers = {"Authorization": f"Bearer {token}"}
+
+# 2. Barcha aktiv obyektlar (2-sahifa, 50 ta)
+r = requests.get(f"{BASE}/objects/", headers=headers,
+    params={"page": 2, "page_size": 50})
+print(r.json()["count"], "ta obyekt topildi")
+
+# 3. Narx filtr: 50000-150000 USD orasida
+r = requests.get(f"{BASE}/objects/", headers=headers,
+    params={"min_price": 50000, "max_price": 150000, "ordering": "-price_starting"})
+for obj in r.json()["results"]:
+    print(obj["id"], obj["name"], obj["price_starting"])
+
+# 4. IP-Phone — bugungi qo'ng'iroqlar
+r = requests.get(f"{BASE}/ip-phone/", headers=headers,
+    params={"ordering": "-timestamp", "treeName": "Kiruvchi"})
+for call in r.json()["results"]:
+    print(call["date_time"], call["phone"], call["operator_name"])
+
+# 5. Kategoriyalar ro'yxati (token shart emas)
+cats = requests.get(f"{BASE}/Categorys/").json()
+for c in cats:
+    print(c["id"], c["name"])
+
+# 6. Token yangilash
+r = requests.post(f"{BASE}/token/refresh/", json={"refresh": "<refresh_token>"})
+new_token = r.json()["access"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. TEZKOR JADVAL — BARCHA ENDPOINTLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Metod | URL                                   | Auth | Tavsif
+  ──────────────────────────────────────────────────────────────────────────────
+  POST  | /api/register/                        | Yo'q | Ro'yxatdan o'tish
+  POST  | /api/login/                           | Yo'q | Kirish, token olish
+  POST  | /api/token/refresh/                   | Yo'q | Access tokenni yangilash
+  GET   | /api/me/                              | JWT  | O'z profili
+  POST  | /api/user/saved-object/<id>/          | JWT  | Saqlash/o'chirish (toggle)
+  GET   | /api/user/saved-objects/              | JWT  | Saqlangan obyektlar
+  ──────────────────────────────────────────────────────────────────────────────
+  GET   | /api/objects/                         | Opt* | Obyektlar ro'yxati
+  GET   | /api/objects/<id>/                    | Opt* | Bitta obyekt
+  ──────────────────────────────────────────────────────────────────────────────
+  GET   | /api/ip-phone/                        | JWT  | Qo'ng'iroqlar ro'yxati
+  GET   | /api/ip-phone/<id>/                   | JWT  | Bitta qo'ng'iroq
+  ──────────────────────────────────────────────────────────────────────────────
+  GET   | /api/addresses/                       | Opt* | Manzillar
+  GET   | /api/Categorys/                       | Opt* | Kategoriyalar
+  GET   | /api/SubCategorys/                    | Opt* | Ichki kategoriyalar
+  GET   | /api/Sources/                         | Opt* | Manbalar
+  GET   | /api/SaleTypes/                       | Opt* | Sotuv turlari
+  GET   | /api/Rents/                           | Opt* | Ijara turlari
+  GET   | /api/StateRepairs/                    | Opt* | Ta'mir holatlari
+  GET   | /api/Balconys/                        | Opt* | Balkon turlari
+  GET   | /api/LayoutTypes/                     | Opt* | Rejalayish turlari
+  GET   | /api/Furnitures/                      | Opt* | Mebel
+  GET   | /api/Bathrooms/                       | Opt* | Vannaxona
+  GET   | /api/TypeBuildings/                   | Opt* | Bino turlari
+  GET   | /api/Elevators/                       | Opt* | Lift
+  GET   | /api/ViewWindows/                     | Opt* | Deraza ko'rinishi
+  GET   | /api/Parkings/                        | Opt* | Parking
+  GET   | /api/InsideHass/                      | Opt* | Ichida nima bor
+  GET   | /api/NearbyHass/                      | Opt* | Yaqinida nima bor
+  GET   | /api/LocationObjects/                 | Opt* | Joylashuv ob'ektlari
+  GET   | /api/Gass/                            | Opt* | Gaz
+  GET   | /api/AirConditioningSystems/          | Opt* | Konditsioner
+  GET   | /api/HouseConditions/                 | Opt* | Uy holati
+  GET   | /api/HouseLocations/                  | Opt* | Uy joylashuvi
+  GET   | /api/Pools/                           | Opt* | Basseyn
+  GET   | /api/Waters/                          | Opt* | Suv
+  GET   | /api/Electrocitys/                    | Opt* | Elektr
+  GET   | /api/Garages/                         | Opt* | Garaj
+  GET   | /api/TypeLicences/                    | Opt* | Litsenziya
+  GET   | /api/TypeLandPlots/                   | Opt* | Yer uchastkasi turi
+  GET   | /api/AccessRoadss/                    | Opt* | Yo'llar
+  GET   | /api/LocationOfObjects/               | Opt* | Ob'ekt joylashuvi
+  GET   | /api/ObjectStatuss/                   | Opt* | Ob'ekt statuslari
+  GET   | /api/PropertyTypes/                   | Opt* | Mulk turlari
+  GET   | /api/ObjectTypes/                     | Opt* | Ob'ekt turlari
+  GET   | /api/ObjectStatusEarths/              | Opt* | Yer statuslari
+  GET   | /api/ClientTypes/                     | Opt* | Mijoz turlari
+  GET   | /api/ClientStatuss/                   | Opt* | Mijoz statuslari
+
+  * Opt = Ixtiyoriy (o'qish uchun token shart emas, yozish uchun kerak)
+  * JWT = Token majburiy
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. MUHIM ESLATMALAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. JWT access_token muddati: ~60 daqiqa
+     Muddati o'tganda /api/token/refresh/ endpoint bilan yangilang.
+
+  2. ip-phone endpoint TEAM asosida filtrlanadi.
+     Har bir foydalanuvchi faqat o'z jamoasining qo'ng'iroqlarini ko'radi.
+
+  3. Barcha vaqtlar UTC formatida.
+     date_time maydoni esa O'zbekiston vaqtida (format: DD.MM.YYYY HH:MM)
+
+  4. Rasmlar (images) uchun to'liq URL:
+     https://megapolis1.uz + build_house_images[0].image
+     Masalan: https://megapolis1.uz/media/house/photo.jpg
+
+  5. Lookup endpointlar (Categorys, SaleTypes va h.k.) kesh qilinishi tavsiya
+     etiladi — ular kamdan-kam o'zgaradi.
+
+  6. objects/ endpoint in_site=True filtrini avtomatik qo'llar.
+     Ya'ni faqat saytda ko'rsatilishi kerak bo'lgan obyektlar chiqadi.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                     © Megapolis CRM API Reference 2025
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
