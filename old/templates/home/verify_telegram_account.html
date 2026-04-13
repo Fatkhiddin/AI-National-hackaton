@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% block title %}Telegram Account Tasdiqlash - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-mobile-alt me-2"></i>
+                    Telegram Account Tasdiqlash
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Ma'lumot:</strong> 
+                    {% if step == 'send_code' %}
+                        Tasdiqlash kodini telefon raqamingizga yuborish uchun tugmani bosing.
+                    {% else %}
+                        Telefon raqamingizga yuborilgan tasdiqlash kodini kiriting.
+                        Agar kod kelmagan bo'lsa, bir necha daqiqa kutib qayta urinib ko'ring.
+                    {% endif %}
+                </div>
+
+                {% if step == 'send_code' %}
+                    <div class="text-center mb-4">
+                        <i class="fab fa-telegram-plane fa-4x text-primary mb-3"></i>
+                        <h5>{{ phone_number }}</h5>
+                        <p class="text-muted">Telegram verification code yuborish</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="step" value="send_code">
+                        <input type="hidden" name="phone_number" value="{{ phone_number }}">
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                Tasdiqlash Kodini Yuborish
+                            </button>
+                            <a href="{% url 'add_telegram_account' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Orqaga
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Telegram API orqali verification
+                                </h6>
+                                <div class="small">
+                                    <p class="mb-2">
+                                        Bu jarayon haqiqiy Telegram API dan foydalanadi:
+                                    </p>
+                                    <ul class="mb-0">
+                                        <li>Haqiqiy SMS kod yuboriladi</li>
+                                        <li>Telegram session yaratiladi</li>
+                                        <li>Barcha API funksiyalar ishlaydi</li>
+                                        <li>2FA himoyasi qo'llab-quvvatlanadi</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif step == 'code' %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="step" value="code">
+                        <input type="hidden" name="phone_number" value="{{ phone_number }}">
+                        <input type="hidden" name="phone_code_hash" value="{{ phone_code_hash }}">
+
+                        <div class="mb-3">
+                            <label for="verification_code" class="form-label">
+                                <i class="fas fa-key me-1"></i>
+                                Tasdiqlash Kodi <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control text-center" 
+                                   id="verification_code" 
+                                   name="verification_code" 
+                                   placeholder="12345"
+                                   maxlength="5"
+                                   required
+                                   autofocus>
+                            <div class="form-text">
+                                {{ phone_number }} raqamiga yuborilgan 5 xonali kod
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i>
+                                Kodni Tasdiqlash
+                            </button>
+                            <a href="{% url 'telegram_accounts' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>
+                                Bekor Qilish
+                            </a>
+                        </div>
+                    </form>
+
+                {% elif step == 'password' %}
+                    <div class="alert alert-warning mb-4">
+                        <i class="fas fa-lock me-2"></i>
+                        <strong>Ikki bosqichli autentifikatsiya:</strong> 
+                        Telegram accountingizda 2FA yoqilgan. Parolni kiriting.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="step" value="password">
+                        <input type="hidden" name="phone_number" value="{{ phone_number }}">
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>
+                                Telegram Paroli <span class="text-danger">*</span>
+                            </label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Telegram parolingizni kiriting"
+                                   required
+                                   autofocus>
+                            <div class="form-text">
+                                Telegram 2FA (ikki bosqichli autentifikatsiya) paroli
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-unlock me-1"></i>
+                                Parolni Tasdiqlash
+                            </button>
+                            <a href="{% url 'telegram_accounts' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>
+                                Bekor Qilish
+                            </a>
+                        </div>
+                    </form>
+
+                {% elif step == 'reactivate' %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Account Qayta Faollashtirish:</strong> 
+                        Bu account nofaol holatda. Qayta faollashtirish uchun tugmani bosing.
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <i class="fab fa-telegram-plane fa-4x text-primary mb-3"></i>
+                        <h5>{{ telegram_account.phone_number }}</h5>
+                        <p class="text-muted">{{ telegram_account.session_name }}</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reactivate">
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-redo me-2"></i>
+                                Accountni Qayta Faollashtirish
+                            </button>
+                            <a href="{% url 'telegram_accounts' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Orqaga
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-question-circle me-2"></i>
+                                    Qayta faollashtirish haqida
+                                </h6>
+                                <div class="small">
+                                    <p class="mb-2">
+                                        Account qayta faollashtirilganda:
+                                    </p>
+                                    <ul class="mb-0">
+                                        <li>Session fayli saqlanadi</li>
+                                        <li>Kontaktlar o'z joyida qoladi</li>
+                                        <li>Barcha funksiyalar qayta ishlaydi</li>
+                                        <li>Yangi tasdiqlash talab qilinmaydi</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif step == 'success' %}
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle fa-4x text-success"></i>
+                        </div>
+                        <h4 class="text-success mb-3">Muvaffaqiyatli!</h4>
+                        <p class="text-muted mb-4">
+                            Telegram account muvaffaqiyatli qo'shildi va tasdiqlandi.
+                            Endi siz bu account orqali kontaktlar va chatlar bilan ishlashingiz mumkin.
+                        </p>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'telegram_accounts' %}" class="btn btn-primary">
+                                <i class="fab fa-telegram-plane me-1"></i>
+                                Account Boshqaruv
+                            </a>
+                            <a href="{% url 'import_contacts' %}" class="btn btn-success">
+                                <i class="fas fa-file-import me-1"></i>
+                                Kontakt Import
+                            </a>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-home me-1"></i>
+                                Dashboard
+                            </a>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-4">
+                            <i class="fas fa-exclamation-triangle fa-4x text-warning"></i>
+                        </div>
+                        <h4 class="text-warning mb-3">Xatolik yuz berdi</h4>
+                        <p class="text-muted mb-4">
+                            Telegram account tasdiqlashda xatolik yuz berdi. 
+                            Iltimos qayta urinib ko'ring yoki ma'lumotlaringizni tekshiring.
+                        </p>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'add_telegram_account' %}" class="btn btn-primary">
+                                <i class="fas fa-redo me-1"></i>
+                                Qayta Urinish
+                            </a>
+                            <a href="{% url 'telegram_accounts' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Orqaga
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Help Section -->
+                {% if step == 'code' or step == 'password' %}
+                <div class="mt-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-question-circle me-2"></i>
+                                Yordam
+                            </h6>
+                            <div class="small">
+                                {% if step == 'code' %}
+                                    <p class="mb-2">
+                                        <strong>Kod kelmayapsimi?</strong> 
+                                        Bir necha daqiqa kutib, qayta urinib ko'ring.
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Telefon raqam noto'g'ri?</strong> 
+                                        <a href="{% url 'add_telegram_account' %}">Qayta boshlash</a>
+                                    </p>
+                                {% elif step == 'password' %}
+                                    <p class="mb-2">
+                                        <strong>Parolni unutdingizmi?</strong> 
+                                        Telegram ilovasida parolni tiklashingiz mumkin.
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>2FA yo'q?</strong> 
+                                        Bu xatolik bo'lishi mumkin, qayta urinib ko'ring.
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Auto-focus and format verification code input
+    {% if step == 'code' %}
+    document.getElementById('verification_code').addEventListener('input', function(e) {
+        // Remove non-numeric characters
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Auto-submit when 5 digits are entered
+        if (this.value.length === 5) {
+            setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        }
+    });
+    {% endif %}
+
+    // Auto-submit form when verification is successful
+    {% if step == 'success' %}
+    // Optional: Auto-redirect after 3 seconds
+    // setTimeout(() => {
+    //     window.location.href = "{% url 'dashboard' %}";
+    // }, 3000);
+    {% endif %}
+</script>
+{% endblock %}
+{% endblock %}

@@ -325,9 +325,15 @@
                     {{ call.date_time|default:call.timestamp }}
                 </td>
                 <td class="ip-table-actions">
-                    <button class="btn-analyze" onclick="openAnalyzeModal({{ call.id }}, '{{ call.phone }}', '{{ call.operator_name }}')">
-                        🤖 Analiz
+                    {% if call.call_record_link %}
+                    <button class="btn-analyze" onclick="openAnalyzeModal('{{ call.id }}', '{{ call.phone }}', '{{ call.operator_name }}', '{{ call.call_record_link }}')">
+                        🤖 STT + AI
                     </button>
+                    {% else %}
+                    <button class="btn-analyze" disabled title="Audio yozuv yo'q">
+                        🤖 Audio yo'q
+                    </button>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -360,9 +366,9 @@
 
 <!-- AI Analiz Modal -->
 <div id="analyzeModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
-            <h2>🤖 AI Analiz</h2>
+            <h2>🤖 STT + AI Tahlil</h2>
             <button class="modal-close" onclick="closeAnalyzeModal()">✕</button>
         </div>
         <div class="modal-body">
@@ -375,15 +381,62 @@
                 <div class="analyze-info-label">Operator</div>
                 <div class="analyze-info-value" id="analyzeOperator">—</div>
             </div>
-            
-            <div id="analyzeLoadingDiv" class="analyze-loading" style="display: none;">
-                <div class="spinner"></div>
-                <p style="color: var(--text-secondary); margin: 0;">Tez orada analiz natijasi chiqadi...</p>
+
+            <!-- Til tanlash -->
+            <div class="analyze-info" style="margin-bottom: 15px;">
+                <div class="analyze-info-label">Til</div>
+                <select id="sttLanguage" style="width: 100%; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); margin-top: 5px;">
+                    <option value="uz">O'zbek</option>
+                    <option value="ru">Rus</option>
+                    <option value="ru-uz">O'zbek-Rus (Aralash)</option>
+                </select>
+            </div>
+
+            <!-- Boshlash tugmasi -->
+            <div id="analyzeStartDiv" style="text-align: center; margin: 20px 0;">
+                <button id="startAnalyzeBtn" class="btn-apply" style="padding: 12px 30px; font-size: 1rem;" onclick="startAnalysis()">
+                    🚀 STT + AI Tahlilni Boshlash
+                </button>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 8px;">
+                    Audio → Matn (UzbekVoice.ai) → AI Tahlil (Gemini/GPT/Claude)
+                </p>
             </div>
             
+            <!-- Loading -->
+            <div id="analyzeLoadingDiv" class="analyze-loading" style="display: none;">
+                <div class="spinner"></div>
+                <p id="loadingStatus" style="color: var(--text-secondary); margin: 0;">
+                    🎤 Audio matn ga o'girilmoqda (UzbekVoice.ai)...
+                </p>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 8px;">
+                    Bu jarayon 30-120 soniya davom etishi mumkin
+                </p>
+            </div>
+            
+            <!-- Natija -->
             <div id="analyzeResultDiv" class="analyze-result" style="display: none;">
-                <h3>📊 Analiz Natijasi</h3>
-                <div id="analyzeResultText"></div>
+                <!-- STT Natija -->
+                <div id="sttResultSection" style="margin-bottom: 20px;">
+                    <h3>🎤 STT Natijasi (Matn)</h3>
+                    <div id="sttResultText" style="background: rgba(99,102,241,0.08); padding: 12px; border-radius: 8px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6;"></div>
+                </div>
+                
+                <!-- AI Tahlil Natija -->
+                <div id="aiResultSection" style="display: none;">
+                    <h3>📊 AI Tahlil Natijasi</h3>
+                    <div id="aiScoreBadge" style="display: none; text-align: center; margin: 10px 0;">
+                        <span style="font-size: 2rem; font-weight: 800; color: var(--accent-light);" id="scoreValue"></span>
+                        <span style="font-size: 1rem; color: var(--text-secondary);">/10</span>
+                    </div>
+                    <div id="aiResultText" style="white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6;"></div>
+                </div>
+
+                <!-- Xato xabar -->
+                <div id="errorSection" style="display: none;">
+                    <div style="background: rgba(239,68,68,0.1); border-left: 4px solid #ef4444; padding: 12px; border-radius: 8px; color: #fca5a5;">
+                        <strong>❌ Xato:</strong> <span id="errorText"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -505,48 +558,135 @@ window.onclick = function(event) {
         modal.style.display = 'none';
     }
 }
-function openAnalyzeModal(callId, phone, operator) {
+
+// Global o'zgaruvchilar
+let currentCallId = null;
+let currentAudioUrl = null;
+
+function openAnalyzeModal(callId, phone, operator, audioUrl) {
+    currentCallId = callId;
+    currentAudioUrl = audioUrl;
+    
     document.getElementById('analyzePhone').textContent = phone;
     document.getElementById('analyzeOperator').textContent = operator || '—';
     
+    // Boshlang'ich holat
+    document.getElementById('analyzeStartDiv').style.display = 'block';
+    document.getElementById('analyzeLoadingDiv').style.display = 'none';
+    document.getElementById('analyzeResultDiv').style.display = 'none';
+    document.getElementById('startAnalyzeBtn').disabled = false;
+    document.getElementById('startAnalyzeBtn').textContent = '🚀 STT + AI Tahlilni Boshlash';
+    
     const modal = document.getElementById('analyzeModal');
     modal.style.display = 'block';
-    
-    // Loading ko'rsatish
-    document.getElementById('analyzeLoadingDiv').style.display = 'block';
-    document.getElementById('analyzeResultDiv').style.display = 'none';
-    
-    // 2 sekund kutib, keyin natija chiqarish
-    setTimeout(() => {
-        showAnalyzeResult(phone, operator, callId);
-    }, 2000);
 }
 
 function closeAnalyzeModal() {
     document.getElementById('analyzeModal').style.display = 'none';
+    currentCallId = null;
+    currentAudioUrl = null;
 }
 
-function showAnalyzeResult(phone, operator, callId) {
-    document.getElementById('analyzeLoadingDiv').style.display = 'none';
-    document.getElementById('analyzeResultDiv').style.display = 'block';
+function startAnalysis() {
+    if (!currentAudioUrl) {
+        showNotification('❌ Audio URL topilmadi', 'error');
+        return;
+    }
     
-    // Mock AI natija
-    const analysisText = `
-        <p><strong>📞 Qo'ng'iroq Tahlili:</strong></p>
-        <ul style="margin: 10px 0; padding-left: 20px;">
-            <li><strong>Telefon:</strong> ${phone}</li>
-            <li><strong>Operator:</strong> ${operator || 'Noma\'lum'}</li>
-            <li><strong>Qo'ng'iroq Turi:</strong> Kiruvchi qo'ng'iroq</li>
-            <li><strong>Sifat:</strong> Yaxshi (Shutsiz ijro etildi)</li>
-            <li><strong>Davomiyligi:</strong> 1:08</li>
-        </ul>
-        <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-            <strong>✨ Xulosa:</strong> Qo'ng'iroq muvaffaqiyatli yakunlandi. 
-            Operator sifatli xizmat ko'rsatdi.
-        </p>
-    `;
+    const startBtn = document.getElementById('startAnalyzeBtn');
+    const language = document.getElementById('sttLanguage').value;
     
-    document.getElementById('analyzeResultText').innerHTML = analysisText;
+    // UI yangilash - loading
+    startBtn.disabled = true;
+    startBtn.textContent = '⏳ Jarayonda...';
+    document.getElementById('analyzeStartDiv').style.display = 'none';
+    document.getElementById('analyzeLoadingDiv').style.display = 'block';
+    document.getElementById('analyzeResultDiv').style.display = 'none';
+    document.getElementById('loadingStatus').textContent = '🎤 Audio matn ga o\'girilmoqda (UzbekVoice.ai)...';
+    
+    // API ga so'rov
+    fetch('{% url "operators_analys:process_recording" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            call_id: currentCallId,
+            audio_url: currentAudioUrl,
+            language: language,
+            analyze_with_ai: 'true'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('analyzeLoadingDiv').style.display = 'none';
+        document.getElementById('analyzeResultDiv').style.display = 'block';
+        
+        if (data.success) {
+            // STT natijasini ko'rsatish
+            const sttText = data.transcribed_text || 'Matn olinmadi';
+            document.getElementById('sttResultText').textContent = sttText;
+            document.getElementById('sttResultSection').style.display = 'block';
+            
+            // AI tahlil natijasini ko'rsatish
+            if (data.analysis_text) {
+                document.getElementById('aiResultSection').style.display = 'block';
+                document.getElementById('aiResultText').textContent = data.analysis_text;
+                
+                if (data.overall_score) {
+                    document.getElementById('aiScoreBadge').style.display = 'block';
+                    document.getElementById('scoreValue').textContent = data.overall_score;
+                    
+                    // Rang o'zgartirish
+                    const scoreEl = document.getElementById('scoreValue');
+                    if (data.overall_score >= 7) scoreEl.style.color = '#10b981';
+                    else if (data.overall_score >= 4) scoreEl.style.color = '#f59e0b';
+                    else scoreEl.style.color = '#ef4444';
+                }
+            }
+            
+            // AI xato bo'lsa
+            if (data.ai_error) {
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('errorText').textContent = 'AI tahlil xatosi: ' + data.ai_error;
+            }
+            
+            // Xabar
+            if (data.already_processed) {
+                showNotification('ℹ️ Bu qo\'ng\'iroq allaqachon STT orqali o\'tkazilgan', 'success');
+            } else {
+                showNotification('✓ STT + AI tahlil muvaffaqiyatli bajarildi!', 'success');
+            }
+        } else {
+            // Xato
+            document.getElementById('sttResultSection').style.display = 'none';
+            document.getElementById('aiResultSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('errorText').textContent = data.error || 'Noma\'lum xatolik';
+            
+            showNotification('❌ Xato: ' + (data.error || 'Noma\'lum xatolik'), 'error');
+        }
+        
+        // Boshlash tugmasini qayta faollashtirish
+        startBtn.disabled = false;
+        startBtn.textContent = '🔄 Qayta Tahlil Qilish';
+        document.getElementById('analyzeStartDiv').style.display = 'block';
+    })
+    .catch(error => {
+        document.getElementById('analyzeLoadingDiv').style.display = 'none';
+        document.getElementById('analyzeResultDiv').style.display = 'block';
+        document.getElementById('sttResultSection').style.display = 'none';
+        document.getElementById('aiResultSection').style.display = 'none';
+        document.getElementById('errorSection').style.display = 'block';
+        document.getElementById('errorText').textContent = 'Tarmoq xatosi: ' + error.message;
+        
+        startBtn.disabled = false;
+        startBtn.textContent = '🔄 Qayta Urinish';
+        document.getElementById('analyzeStartDiv').style.display = 'block';
+        
+        showNotification('❌ Tarmoq xatosi: ' + error.message, 'error');
+    });
 }
 
 // Modal tashqarida bosilganda yopish

@@ -1,13 +1,13 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from home.models import CRMConfiguration
+from home.models import CRMConfiguration, UzbekVoiceConfiguration
 from urllib.parse import urljoin
 import requests
 from django.contrib import messages
-from .services import SIPCallService
-from .models import IPPhoneCall
+from .services import SIPCallService, process_call_recording, analyze_text_with_ai
+from .models import IPPhoneCall, STTRecord, AIAnalysis
 
 
 @login_required(login_url='user:login')
@@ -241,3 +241,159 @@ def sip_calls_stats_view(request):
             'error': str(e)
         }, status=400)
 
+
+# ═══════════════════════════════════════════════════════
+# STT + AI TAHLIL VIEWS
+# ═══════════════════════════════════════════════════════
+
+@login_required(login_url='user:login')
+@require_http_methods(["POST"])
+def process_recording_view(request):
+    """
+    Qo'ng'iroq yozuvini STT + AI bilan qayta ishlash (AJAX)
+    
+    Frontend dan keladi:
+        - call_id: IPPhoneCall ning ID si (bazadagi yoki CRM dagi)
+        - audio_url: Audio fayl URL
+        - language: Til (uz, ru, ru-uz) - ixtiyoriy
+        - analyze_with_ai: AI tahlil qilinsinmi (true/false) - ixtiyoriy
+    """
+    try:
+        import json
+        
+        # Request body ni olish
+        if request.content_type == 'application/json':
+            body = json.loads(request.body)
+        else:
+            body = request.POST
+        
+        call_id = body.get('call_id')
+        audio_url = body.get('audio_url')
+        language = body.get('language', 'uz')
+        analyze_with_ai_flag = body.get('analyze_with_ai', 'true')
+        
+        if isinstance(analyze_with_ai_flag, str):
+            analyze_with_ai_flag = analyze_with_ai_flag.lower() == 'true'
+        
+        if not audio_url:
+            return JsonResponse({
+                'success': False,
+                'error': 'Audio URL kiritilmagan'
+            }, status=400)
+        
+        # UzbekVoice API key ni admin paneldan olish
+        uzbekvoice_config = UzbekVoiceConfiguration.get_config()
+        
+        if not uzbekvoice_config.api_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'UzbekVoice.ai API key sozlanmagan. Admin paneldan "UzbekVoice STT Configuration" ga API key kiriting.'
+            }, status=400)
+        
+        uzbekvoice_api_key = uzbekvoice_config.api_key
+        
+        # Agar language berilmagan bo'lsa, config dan olish
+        if not language or language == 'uz':
+            language = uzbekvoice_config.default_language or 'uz'
+        
+        # IPPhoneCall obyekti (agar call_id berilgan bo'lsa)
+        call_record_object = None
+        if call_id:
+            try:
+                call_record_object = IPPhoneCall.objects.get(id=call_id)
+            except IPPhoneCall.DoesNotExist:
+                pass
+        
+        # STT + AI tahlil
+        result = process_call_recording(
+            audio_url=audio_url,
+            uzbekvoice_api_key=uzbekvoice_api_key,
+            call_record_object=call_record_object,
+            user=request.user,
+            language=language,
+            analyze_with_ai=analyze_with_ai_flag
+        )
+        
+        return JsonResponse(result)
+    
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Noto\'g\'ri JSON format'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Xatolik: {str(e)}'
+        }, status=500)
+
+
+@login_required(login_url='user:login')
+@require_http_methods(["GET"])
+def stt_status_view(request, stt_record_id):
+    """
+    STT natijasini olish (AJAX)
+    """
+    try:
+        stt_record = get_object_or_404(STTRecord, id=stt_record_id)
+        
+        data = {
+            'success': True,
+            'status': stt_record.status,
+            'transcribed_text': stt_record.transcribed_text,
+            'error_message': stt_record.error_message,
+        }
+        
+        # AI tahlil natijasi
+        try:
+            ai_analysis = stt_record.ai_analysis
+            data['ai_analysis'] = {
+                'id': ai_analysis.id,
+                'status': ai_analysis.status,
+                'analysis_text': ai_analysis.analysis_text,
+                'overall_score': ai_analysis.overall_score,
+                'customer_satisfaction': ai_analysis.get_customer_satisfaction_display(),
+                'error_message': ai_analysis.error_message,
+            }
+        except AIAnalysis.DoesNotExist:
+            data['ai_analysis'] = None
+        
+        return JsonResponse(data)
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@login_required(login_url='user:login')
+@require_http_methods(["POST"])
+def analyze_existing_stt_view(request, stt_record_id):
+    """
+    Mavjud STT natijasini qaytadan AI bilan tahlil qilish (AJAX)
+    """
+    try:
+        stt_record = get_object_or_404(STTRecord, id=stt_record_id)
+        
+        if stt_record.status != 'completed':
+            return JsonResponse({
+                'success': False,
+                'error': 'STT hali tugallanmagan'
+            }, status=400)
+        
+        # Oldingi tahlilni o'chirish (qayta tahlil)
+        AIAnalysis.objects.filter(stt_record=stt_record).delete()
+        
+        result = analyze_text_with_ai(
+            stt_record=stt_record,
+            analyzed_by=request.user
+        )
+        
+        return JsonResponse(result)
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

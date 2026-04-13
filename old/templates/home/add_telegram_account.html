@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Yangi Telegram Account - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">
+                    <i class="fab fa-telegram-plane me-2"></i>
+                    Yangi Telegram Account Qo'shish
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Ma'lumot:</strong> API ID va API Hash ni olish uchun 
+                    <a href="https://my.telegram.org" target="_blank" class="alert-link">
+                        my.telegram.org
+                    </a> ga kirib, "API development tools" bo'limiga o'ting.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="api_id" class="form-label">
+                            <i class="fas fa-key me-1"></i>
+                            API ID <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="api_id" 
+                               name="api_id" 
+                               placeholder="Misol: 1234567"
+                               required>
+                        <div class="form-text">
+                            Telegram Developer saytidan olingan API ID raqami
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="api_hash" class="form-label">
+                            <i class="fas fa-lock me-1"></i>
+                            API Hash <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="api_hash" 
+                               name="api_hash" 
+                               placeholder="Misol: abcdef123456789..."
+                               required>
+                        <div class="form-text">
+                            Telegram Developer saytidan olingan API Hash
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone_number" class="form-label">
+                            <i class="fas fa-phone me-1"></i>
+                            Telefon Raqam <span class="text-danger">*</span>
+                        </label>
+                        <input type="tel" 
+                               class="form-control" 
+                               id="phone_number" 
+                               name="phone_number" 
+                               placeholder="+998901234567"
+                               required>
+                        <div class="form-text">
+                            Telegram account bilan bog'langan telefon raqam (+998901234567 formatida)
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="session_name" class="form-label">
+                            <i class="fas fa-tag me-1"></i>
+                            Session Nomi <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="session_name" 
+                               name="session_name" 
+                               placeholder="Misol: main_account, business_account"
+                               required>
+                        <div class="form-text">
+                            Bu account uchun noyob nom (faqat harflar, raqamlar va _ ishlatiladi)
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mb-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Diqqat:</strong> 
+                        Barcha ma'lumotlar to'g'ri kiritilganidan so'ng, sizga Telegram orqali 
+                        tasdiqlash kodi yuboriladi. Telefon yoningizda bo'lishini ta'minlang.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'telegram_accounts' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            Orqaga
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Account Qo'shish
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    API ID va Hash qanday olish kerak?
+                </h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">
+                        <a href="https://my.telegram.org" target="_blank" class="text-decoration-none">
+                            my.telegram.org
+                        </a> saytiga kiring
+                    </li>
+                    <li class="mb-2">Telegram account bilan login qiling</li>
+                    <li class="mb-2">"API development tools" bo'limiga o'ting</li>
+                    <li class="mb-2">Yangi app yarating yoki mavjudini tanlang</li>
+                    <li class="mb-2">API ID va API Hash ni ko'chirib oling</li>
+                    <li>Ushbu formada ma'lumotlarni to'ldiring</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

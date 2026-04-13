@@ -1,0 +1,451 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatlar - Telegram Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; background: #0e1621; color: #fff; }
+        .main-container { height: 100vh; display: flex; flex-direction: column; background: #0e1621; }
+        .accounts-bar { background: #17212b; border-bottom: 1px solid #0e1621; padding: 12px 16px; display: flex; align-items: center; gap: 12px; overflow-x: auto; flex-shrink: 0; }
+        .accounts-bar::-webkit-scrollbar { height: 4px; }
+        .accounts-bar::-webkit-scrollbar-thumb { background: #2b5278; border-radius: 2px; }
+        .account-item { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 18px; background: #242f3d; border: 1px solid transparent; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+        .account-item:hover { background: #2b5278; border-color: #5288c1; }
+        .account-item.active { background: #2b5278; border-color: #5288c1; }
+        .account-item.spam-blocked { background: #3d2626; border-color: #753838; cursor: not-allowed; opacity: 0.7; }
+        .account-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #5288c1 0%, #2b5278 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 14px; }
+        .account-info { display: flex; flex-direction: column; }
+        .account-phone { color: #fff; font-size: 14px; font-weight: 500; }
+        .account-status { color: #aaa; font-size: 11px; }
+        .refresh-btn { margin-left: auto; padding: 8px 16px; background: #242f3d; border: 1px solid #2b5278; border-radius: 18px; color: #5288c1; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .refresh-btn:hover { background: #2b5278; }
+        .content-wrapper { flex: 1; display: flex; overflow: hidden; }
+        .chats-panel { width: 420px; background: #17212b; border-right: 1px solid #0e1621; display: flex; flex-direction: column; flex-shrink: 0; }
+        .chats-header { padding: 16px 20px; border-bottom: 1px solid #0e1621; }
+        .chats-header h5 { margin: 0 0 12px 0; color: #fff; font-size: 20px; font-weight: 600; }
+        .chat-search-box { position: relative; }
+        .chat-search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #aaa; }
+        .chat-search { width: 100%; padding: 10px 12px 10px 36px; background: #242f3d; border: none; border-radius: 22px; color: #fff; outline: none; transition: all 0.2s; }
+        .chat-search:focus { background: #2b3544; }
+        .chat-search::placeholder { color: #aaa; }
+        .chats-list { flex: 1; overflow-y: auto; }
+        .chats-list::-webkit-scrollbar { width: 6px; }
+        .chats-list::-webkit-scrollbar-thumb { background: #2b5278; border-radius: 3px; }
+        .chat-item { padding: 12px 20px; border-bottom: 1px solid #0e1621; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 12px; }
+        .chat-item:hover { background: #242f3d; }
+        .chat-item.active { background: #2b5278; }
+        .chat-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #5288c1 0%, #2b5278 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 22px; flex-shrink: 0; }
+        .chat-content { flex: 1; min-width: 0; }
+        .chat-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .chat-title { color: #fff; font-weight: 500; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-time { color: #aaa; font-size: 12px; flex-shrink: 0; margin-left: 8px; }
+        .chat-preview { color: #aaa; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px; }
+        .chat-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; background: #2b5278; color: #5288c1; margin-left: 6px; }
+        .messages-panel { flex: 1; display: flex; flex-direction: column; background: #0e1621; }
+        .messages-header { padding: 16px 20px; background: #17212b; border-bottom: 1px solid #0e1621; display: flex; align-items: center; gap: 12px; }
+        .messages-header-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #5288c1 0%, #2b5278 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 18px; }
+        .messages-header-info { flex: 1; }
+        .messages-header-title { color: #fff; font-size: 16px; font-weight: 500; margin: 0; }
+        .messages-header-status { color: #aaa; font-size: 13px; }
+        .messages-container { flex: 1; overflow-y: auto; padding: 20px; background: #0e1621; display: flex; flex-direction: column; gap: 8px; }
+        .messages-container::-webkit-scrollbar { width: 6px; }
+        .messages-container::-webkit-scrollbar-thumb { background: #2b5278; border-radius: 3px; }
+        .message { max-width: 65%; display: flex; flex-direction: column; animation: messageIn 0.2s ease; }
+        @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.incoming { align-self: flex-start; }
+        .message.outgoing { align-self: flex-end; }
+        .message-bubble { padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.3); word-wrap: break-word; }
+        .message.incoming .message-bubble { background: #182533; color: #fff; border-bottom-left-radius: 4px; }
+        .message.outgoing .message-bubble { background: #2b5278; color: #fff; border-bottom-right-radius: 4px; }
+        .message-text { margin: 0; line-height: 1.4; color: #fff; }
+        .message-time { font-size: 11px; color: #aaa; margin-top: 4px; text-align: right; }
+        .message.incoming .message-time { text-align: left; }
+        .message-input-wrapper { padding: 16px 20px; background: #17212b; border-top: 1px solid #0e1621; display: flex; align-items: center; gap: 12px; }
+        .message-input { flex: 1; padding: 12px 18px; background: #242f3d; border: none; border-radius: 24px; color: #fff; outline: none; transition: all 0.2s; }
+        .message-input:focus { background: #2b3544; }
+        .message-input::placeholder { color: #aaa; }
+        .send-button { width: 44px; height: 44px; border-radius: 50%; background: #2b5278; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .send-button:hover { background: #5288c1; transform: scale(1.05); }
+        .send-button:disabled { background: #242f3d; color: #555; cursor: not-allowed; transform: scale(1); }
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #aaa; text-align: center; padding: 40px; }
+        .empty-state i { font-size: 72px; margin-bottom: 24px; opacity: 0.3; color: #5288c1; }
+        .empty-state h5 { color: #fff; margin-bottom: 8px; }
+        .empty-state p { color: #aaa; margin: 0; }
+        .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #242f3d; border-top-color: #5288c1; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+            .chats-panel { width: 100%; }
+            .messages-panel { display: none; }
+            .messages-panel.show-mobile { display: flex; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="accounts-bar">
+            {% for account in telegram_accounts %}
+            <div class="account-item {% if account.is_spam_blocked %}spam-blocked{% elif telegram_account and account.id == telegram_account.id %}active{% endif %}"
+                 {% if not account.is_spam_blocked %}onclick="selectAccount({{ account.id }})"{% endif %}>
+                <div class="account-avatar">{{ account.phone_number|slice:"-2:" }}</div>
+                <div class="account-info">
+                    <span class="account-phone">{{ account.phone_number }}</span>
+                    <span class="account-status">
+                        {% if account.is_spam_blocked %}<i class="fas fa-ban"></i> Spam blok{% else %}<i class="fas fa-check-circle"></i> Aktiv{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <div style="color: #aaa; padding: 8px 16px;"><i class="fas fa-exclamation-triangle"></i> Account topilmadi</div>
+            {% endfor %}
+            <button class="refresh-btn" onclick="window.location.href='/dashboard/'"><i class="fas fa-home"></i><span>Dashboard</span></button>
+            <button class="refresh-btn" onclick="refreshChats()"><i class="fas fa-sync-alt"></i><span>Yangilash</span></button>
+        </div>
+        <div class="content-wrapper">
+            <div class="chats-panel">
+                <div class="chats-header">
+                    <h5><i class="fas fa-comments"></i> Chatlar</h5>
+                    <div class="chat-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="chat-search" placeholder="Qidirish..." id="chatSearch" onkeyup="filterChats()">
+                    </div>
+                </div>
+                <div class="chats-list" id="chatsList">
+                    {% if chats %}
+                        {% for chat in chats %}
+                        <div class="chat-item" data-chat-id="{{ chat.id }}" onclick="selectChat({{ telegram_account.id }}, {{ chat.id }})">
+                            <div class="chat-avatar">
+                                {% if chat.avatar %}
+                                    <img src="/media/{{ chat.avatar }}" alt="{{ chat.title }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    {{ chat.title|slice:":1"|upper|default:"U" }}
+                                {% endif %}
+                            </div>
+                            <div class="chat-content">
+                                <div class="chat-title-row">
+                                    <span class="chat-title">{{ chat.title|default:chat.username|default:"Unknown" }}</span>
+                                    <span class="chat-time">{{ chat.updated_at|date:"H:i" }}</span>
+                                </div>
+                                <div class="chat-preview">
+                                    {% if chat.chat_type == 'private' %}<i class="fas fa-user"></i> Shaxsiy chat
+                                    {% elif chat.chat_type == 'group' or chat.chat_type == 'supergroup' %}<i class="fas fa-users"></i> Guruh
+                                    {% elif chat.chat_type == 'channel' %}<i class="fas fa-bullhorn"></i> Kanal
+                                    {% else %}{{ chat.chat_type }}{% endif %}
+                                    <span class="chat-badge">{{ chat.messages.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state"><i class="fas fa-inbox"></i><h5>Chatlar yo'q</h5><p>{% if telegram_account %}Chatlarni yangilang{% else %}Accountni tanlang{% endif %}</p></div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="messages-panel" id="messagesPanel">
+                <div class="empty-state"><i class="fas fa-comments"></i><h5>Xabarlar</h5><p>Chatni tanlang</p></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Info Modal -->
+    <div id="chatInfoModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: #17212b; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h4 style="color: #5288c1; margin: 0;">Chat Ma'lumotlari</h4>
+                <button onclick="closeChatInfo()" style="background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+            </div>
+            <div id="chatInfoContent" style="color: #e1e3e6;"></div>
+        </div>
+    </div>
+    <script>
+    let currentAccountId = {% if telegram_account %}{{ telegram_account.id }}{% else %}null{% endif %};
+    let currentChatId = null;
+    let messagesRefreshInterval = null;
+    let lastMessageCount = 0; // Oxirgi xabarlar sonini saqlash
+    
+    // Notification ovozi
+    const notificationSound = new Audio('{% static "not_sound.wav" %}');
+    
+    function selectAccount(accountId) { window.location.href = `?account=${accountId}`; }
+    function selectChat(accountId, chatId) {
+        currentAccountId = accountId; currentChatId = chatId;
+        document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+        const selectedChat = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+        if (selectedChat) selectedChat.classList.add('active');
+        loadMessages(accountId, chatId);
+        if (messagesRefreshInterval) clearInterval(messagesRefreshInterval);
+        messagesRefreshInterval = setInterval(() => loadMessages(accountId, chatId, true), 5000);
+    }
+    function loadMessages(accountId, chatId, silent = false) {
+        const messagesPanel = document.getElementById('messagesPanel');
+        
+        // Saqlash: input qiymatini
+        const existingInput = document.getElementById('messageInput');
+        const savedInputValue = existingInput ? existingInput.value : '';
+        
+        if (!silent) messagesPanel.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+        
+        fetch(`/api/messages/${accountId}/${chatId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const chat = data.chat;
+                    const messages = data.messages;
+                    const avatar = chat.title ? chat.title.charAt(0).toUpperCase() : 'U';
+                    
+                    // Silent mode da faqat xabarlarni yangilash
+                    if (silent) {
+                        const container = document.getElementById('messagesContainer');
+                        if (container) {
+                            // Hozirgi xabarlar sonini tekshirish
+                            const currentMessagesCount = container.querySelectorAll('.message').length;
+                            if (currentMessagesCount !== messages.length) {
+                                // Yangi xabar kelganligini aniqlash
+                                const hasNewMessages = messages.length > lastMessageCount;
+                                const lastMessage = messages[messages.length - 1];
+                                const isIncomingMessage = hasNewMessages && lastMessage && !lastMessage.is_outgoing;
+                                
+                                // Agar yangi kiruvchi xabar bo'lsa, ovoz chiqarish
+                                if (isIncomingMessage) {
+                                    notificationSound.play().catch(e => console.log('Sound play failed:', e));
+                                }
+                                
+                                // Scroll pozitsiyasini saqlash (pastdan 100px ichida bo'lsa "pastda" hisoblanadi)
+                                const scrolledFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                                const isScrolledToBottom = scrolledFromBottom < 100;
+                                
+                                // Faqat xabarlar konteynerini yangilash
+                                container.innerHTML = messages.length > 0 ? messages.map(msg => createMessageHTML(msg)).join('') : '<div class="empty-state"><i class="fas fa-inbox"></i><h5>Xabarlar yo\'q</h5></div>';
+                                
+                                // Agar pastda bo'lsa yoki yangi xabar qo'shilgan bo'lsa, pastga scroll qilish
+                                if (isScrolledToBottom || currentMessagesCount < messages.length) {
+                                    setTimeout(() => {
+                                        container.scrollTop = container.scrollHeight;
+                                    }, 50);
+                                }
+                                
+                                // Oxirgi xabarlar sonini yangilash
+                                lastMessageCount = messages.length;
+                            }
+                        }
+                        return;
+                    }
+                    
+                    // To'liq yangilash (birinchi yuklash)
+                    const avatarHtml = chat.avatar ? 
+                        `<img src="/media/${chat.avatar}" alt="${escapeHtml(chat.title)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 
+                        escapeHtml(avatar);
+                    
+                    messagesPanel.innerHTML = `
+                        <div class="messages-header">
+                            <div class="messages-header-avatar" onclick="showChatInfo(${chatId})" style="cursor: pointer;" title="Ma'lumotlarni ko'rish">
+                                ${avatarHtml}
+                            </div>
+                            <div class="messages-header-info">
+                                <h6 class="messages-header-title">${escapeHtml(chat.title)}</h6>
+                                <div class="messages-header-status">${chat.chat_type}${chat.member_count > 0 ? ' • ' + chat.member_count + ' a\'zo' : ''}</div>
+                            </div>
+                        </div>
+                        <div class="messages-container" id="messagesContainer">
+                            ${messages.length > 0 ? messages.map(msg => createMessageHTML(msg)).join('') : '<div class="empty-state"><i class="fas fa-inbox"></i><h5>Xabarlar yo\'q</h5></div>'}
+                        </div>
+                        <div class="message-input-wrapper">
+                            <input type="text" class="message-input" id="messageInput" placeholder="Xabar yozing..." onkeypress="if(event.key==='Enter') sendMessage()">
+                            <button class="send-button" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    `;
+                    
+                    // Birinchi yuklashda xabarlar sonini saqlash
+                    lastMessageCount = messages.length;
+                    
+                    const container = document.getElementById('messagesContainer');
+                    if (container) container.scrollTop = container.scrollHeight;
+                } else {
+                    messagesPanel.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h5>Xatolik</h5><p>${escapeHtml(data.error)}</p></div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading messages:', error);
+                messagesPanel.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h5>Xatolik yuz berdi</h5><p>${escapeHtml(error.message)}</p></div>`;
+            });
+    }
+    function createMessageHTML(msg) {
+        const messageClass = msg.is_outgoing ? 'outgoing' : 'incoming';
+        // UTC vaqtini Tashkent vaqtiga o'tkazish (+5 soat)
+        const date = new Date(msg.date);
+        const tashkentDate = new Date(date.getTime() + (5 * 60 * 60 * 1000));
+        const time = tashkentDate.toLocaleTimeString('uz-UZ', {hour: '2-digit', minute: '2-digit'});
+        return `<div class="message ${messageClass}"><div class="message-bubble"><p class="message-text">${escapeHtml(msg.text || '[Media]')}</p><div class="message-time">${time}</div></div></div>`;
+    }
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message || !currentAccountId || !currentChatId) return;
+        const sendBtn = document.querySelector('.send-button');
+        sendBtn.disabled = true;
+        
+        // Form data yuborish (backend request.POST ishlatadi)
+        const formData = new FormData();
+        formData.append('message', message);
+        
+        fetch(`/chats/${currentAccountId}/${currentChatId}/send/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) { 
+                input.value = '';
+                // Xabar yuborilgandan keyin darhol yangilash va pastga scroll
+                setTimeout(() => {
+                    loadMessages(currentAccountId, currentChatId, true);
+                }, 100);
+            } else { 
+                alert('Xatolik: ' + data.error); 
+            }
+            sendBtn.disabled = false;
+        })
+        .catch(error => { 
+            alert('Xatolik: ' + error.message); 
+            sendBtn.disabled = false; 
+        });
+    }
+    function filterChats() {
+        const searchTerm = document.getElementById('chatSearch').value.toLowerCase();
+        document.querySelectorAll('.chat-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+        });
+    }
+    function refreshChats() {
+        if (currentAccountId) window.location.href = `?account=${currentAccountId}&refresh=1`;
+        else window.location.href = '?refresh=1';
+    }
+    function showChatInfo(chatId) {
+        fetch(`/api/chat/${currentAccountId}/${chatId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const chat = data.chat;
+                    const details = data.details || {};
+                    
+                    const avatarHtml = chat.avatar ? 
+                        `<img src="/media/${chat.avatar}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto 20px; display: block; border: 3px solid #2b5278;">` : 
+                        `<div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; border: 3px solid #2b5278;">${chat.title.charAt(0).toUpperCase()}</div>`;
+                    
+                    let infoHtml = `
+                        ${avatarHtml}
+                        <div style="text-align: center; margin-bottom: 25px;">
+                            <h3 style="color: #5288c1; margin: 0 0 5px 0;">
+                                ${escapeHtml(chat.title)}
+                                ${details.premium ? '<i class="fas fa-check-circle" style="color: #5288c1; margin-left: 5px;" title="Premium"></i>' : ''}
+                                ${details.verified ? '<i class="fas fa-badge-check" style="color: #5288c1; margin-left: 5px;" title="Verified"></i>' : ''}
+                                ${details.scam ? '<span style="background: #e53935; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px;">SCAM</span>' : ''}
+                                ${details.fake ? '<span style="background: #fb8c00; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 5px;">FAKE</span>' : ''}
+                            </h3>
+                            ${chat.username ? `<p style="color: #aaa; margin: 5px 0;">@${escapeHtml(chat.username)}</p>` : ''}
+                            ${details.phone ? `<p style="color: #5288c1; margin: 5px 0;"><i class="fas fa-phone"></i> ${escapeHtml(details.phone)}</p>` : ''}
+                        </div>
+                        <div style="background: #0e1621; border-radius: 8px; padding: 20px;">`;
+                    
+                    // Chat ID
+                    infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-id-badge"></i> Chat ID:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${chat.chat_id}</span>
+                        </div>`;
+                    
+                    // Turi
+                    infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-tag"></i> Turi:</span>
+                            <span style="color: #5288c1; font-weight: bold; text-transform: capitalize;">${chat.chat_type}</span>
+                        </div>`;
+                    
+                    // Status
+                    if (details.status) {
+                        infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-circle"></i> Status:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${escapeHtml(details.status)}</span>
+                        </div>`;
+                    }
+                    
+                    // Bot
+                    if (details.is_bot) {
+                        infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-robot"></i> Bot:</span>
+                            <span style="color: #5288c1; font-weight: bold;">Ha</span>
+                        </div>`;
+                    }
+                    
+                    // A'zolar
+                    if (chat.member_count > 0) {
+                        infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-users"></i> A'zolar:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${chat.member_count}</span>
+                        </div>`;
+                    }
+                    
+                    // Xabarlar
+                    infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-envelope"></i> Xabarlar:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${chat.messages_count}</span>
+                        </div>`;
+                    
+                    // Lang code
+                    if (details.lang_code) {
+                        infoHtml += `
+                        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2b5278;">
+                            <span style="color: #aaa;"><i class="fas fa-language"></i> Til:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${escapeHtml(details.lang_code).toUpperCase()}</span>
+                        </div>`;
+                    }
+                    
+                    // Yangilangan
+                    infoHtml += `
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                            <span style="color: #aaa;"><i class="fas fa-clock"></i> Yangilangan:</span>
+                            <span style="color: #5288c1; font-weight: bold;">${new Date(chat.updated_at).toLocaleString('uz-UZ')}</span>
+                        </div>`;
+                    
+                    infoHtml += `</div>`;
+                    
+                    document.getElementById('chatInfoContent').innerHTML = infoHtml;
+                    document.getElementById('chatInfoModal').style.display = 'flex';
+                } else {
+                    alert('Xatolik: ' + data.error);
+                }
+            })
+            .catch(error => alert('Xatolik: ' + error.message));
+    }
+    function closeChatInfo() {
+        document.getElementById('chatInfoModal').style.display = 'none';
+    }
+    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    window.addEventListener('beforeunload', () => { if (messagesRefreshInterval) clearInterval(messagesRefreshInterval); });
+    </script>
+</body>
+</html>

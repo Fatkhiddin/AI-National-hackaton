@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% block title %}AI Integration - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-robot me-2"></i>
+        AI Integration
+    </h1>
+</div>
+
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Kelgusida:</strong> 
+    Bu bo'lim hozirda ishlab chiqilmoqda. AI provider larni sozlash va avtomatik javob berish funksiyalari qo'shiladi.
+</div>
+
+<!-- Available AI Integrations -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-brain me-2"></i>
+                    AI Provider lar
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-robot me-2 text-success"></i>
+                            <strong>OpenAI (GPT)</strong>
+                            <br>
+                            <small class="text-muted">ChatGPT API orqali javob berish</small>
+                        </div>
+                        <a href="{% url 'ai_provider_setup' 'openai' %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-cog"></i> Sozlash
+                        </a>
+                    </div>
+                    
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-microchip me-2 text-info"></i>
+                            <strong>Claude (Anthropic)</strong>
+                            <br>
+                            <small class="text-muted">Claude AI yordamchi</small>
+                        </div>
+                        <a href="{% url 'ai_provider_setup' 'claude' %}" class="btn btn-info btn-sm">
+                            <i class="fas fa-cog"></i> Sozlash
+                        </a>
+                    </div>
+                    
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fab fa-google me-2 text-danger"></i>
+                            <strong>Gemini (Google)</strong>
+                            <br>
+                            <small class="text-muted">Google Gemini AI</small>
+                        </div>
+                        <a href="{% url 'ai_provider_setup' 'gemini' %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-cog"></i> Sozlash
+                        </a>
+                    </div>
+                    
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-server me-2 text-secondary"></i>
+                            <strong>Local Model</strong>
+                            <br>
+                            <small class="text-muted">Mahalliy AI model</small>
+                        </div>
+                        <span class="badge bg-warning">Kutilmoqda</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Rejalashtirilgan Imkoniyatlar
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <i class="fas fa-check me-2 text-success"></i>
+                        <strong>Avtomatik Javob</strong>
+                        <br>
+                        <small class="text-muted">Kiruvchi xabarlarga avtomatik AI javob</small>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <i class="fas fa-check me-2 text-success"></i>
+                        <strong>Smart Filter</strong>
+                        <br>
+                        <small class="text-muted">Xabarlarni aqlli filterlash</small>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <i class="fas fa-check me-2 text-success"></i>
+                        <strong>Mass Messaging</strong>
+                        <br>
+                        <small class="text-muted">AI yordamida ommaviy xabar yuborish</small>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <i class="fas fa-check me-2 text-success"></i>
+                        <strong>Analytics</strong>
+                        <br>
+                        <small class="text-muted">AI tahlil va hisobotlar</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current AI Integrations -->
+{% if ai_integrations %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
+            Faol AI Integrations
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Model</th>
+                        <th>Account</th>
+                        <th>Holat</th>
+                        <th>Yaratilgan</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for integration in ai_integrations %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-primary">{{ integration.get_provider_display }}</span>
+                            </td>
+                            <td>{{ integration.model_name }}</td>
+                            <td>{{ integration.telegram_account.phone_number }}</td>
+                            <td>
+                                {% if integration.is_active %}
+                                    <span class="badge bg-success">Faol</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Nofaol</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ integration.created_at|date:"d.m.Y" }}</td>
+                            <td>
+                                <a href="{% url 'admin:home_aiintegration_change' integration.id %}" 
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Information Cards -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    AI Integration Nima Beradi?
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Avtomatik xabar javoblari
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Aqlli kontakt boshqaruvi
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Xabar tahlili va filterlash
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Marketing campaign yordamchisi
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Chat statistikalari
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    Qachon Tayyor Bo'ladi?
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    AI Integration moduli aktiv ishlab chiqilmoqda. 
+                    Quyidagi bosqichlar rejalashtirigan:
+                </p>
+                
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: 25%">
+                        25% tayyor
+                    </div>
+                </div>
+                
+                <div class="small">
+                    <div class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Model strukturasi yaratildi
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        API integratsiya (keyingi hafta)
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        Avtomatik javob tizimi
+                    </div>
+                    <div class="mb-0">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        UI va sozlamalar
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

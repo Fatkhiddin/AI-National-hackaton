@@ -1,0 +1,565 @@
+{
+  "CRM_INTEGRATION_GUIDE": {
+    "version": "1.0",
+    "crm_name": "Megapolis CRM",
+    "base_url": "https://megapolis1.uz",
+    
+    "1_DATABASE_STRUCTURE": {
+      "main_table": "BuildHouse",
+      "description": "Asosiy uy-joy obyektlari jadvali",
+      "fields": {
+        "basic_info": {
+          "id": "Integer (Primary Key)",
+          "name": "CharField(250) - Obyekt nomi",
+          "slug": "SlugField - URL uchun unique identifier",
+          "created_at": "DateTimeField - Yaratilgan vaqt",
+          "updated_at": "DateTimeField - O'zgartirilgan vaqt"
+        },
+        "property_details": {
+          "category": "ForeignKey(Category) - Kategoriya (Kvartira/Uy/Villa)",
+          "sub_category": "ManyToManyField(SubCategory) - Sub kategoriya",
+          "property_type": "ForeignKey(PropertyType) - Yangi/Eski",
+          "sale_type": "ManyToManyField(SaleType) - Sotuv turi",
+          "rent": "ManyToManyField(Rent) - Ijara turi"
+        },
+        "room_and_floor": {
+          "rooms_numbers": "PositiveSmallIntegerField - Xonalar soni",
+          "floor": "PositiveSmallIntegerField - Qavat",
+          "floor_build": "PositiveSmallIntegerField - Umumiy qavatlar soni",
+          "bedrooms_num": "PositiveSmallIntegerField - Yotoq xonalar soni"
+        },
+        "area": {
+          "total_area": "FloatField - Umumiy maydon (m²)",
+          "living_area": "FloatField - Yashash maydoni (m²)",
+          "usable_area": "FloatField - Foydali maydon (m²)",
+          "suggested_area": "FloatField - Tavsiya etilgan maydon",
+          "number_acres": "FloatField - Sotix maydoni"
+        },
+        "price": {
+          "price_owner": "FloatField - Egasining narxi (internal)",
+          "price_starting": "FloatField - Boshlang'ich narx (public)",
+          "price_bargain": "BooleanField - Kelishish mumkinmi",
+          "price_type": "CharField - Valyuta turi (usd/sum)",
+          "commission_agency": "FloatField - Agentlik komissiyasi",
+          "commission_management": "FloatField - Boshqaruv komissiyasi",
+          "commercial_price_starting": "FloatField - Kommertsiya narxi",
+          "commercial_price_type": "CharField - Kommertsiya valyutasi"
+        },
+        "location": {
+          "address": "ForeignKey(Address) - Manzil (hierarchical)",
+          "address_house_number": "CharField - Uy raqami",
+          "address_landwarkr": "CharField - Mo'ljal",
+          "destination": "ForeignKey(Destination) - Yo'nalish",
+          "distance_to_city": "FloatField - Shahar markazigacha masofa",
+          "google_map": "CharField - Google Maps koordinatalari"
+        },
+        "interior_features": {
+          "state_repair": "ForeignKey(StateRepair) - Ta'mirlash holati",
+          "furniture": "ForeignKey(Furniture) - Mebel",
+          "balcony": "ManyToManyField(Balcony) - Balkon",
+          "layout_type": "ManyToManyField(LayoutType) - Xona joylashuvi",
+          "bathroom": "ManyToManyField(Bathroom) - Hammom",
+          "ceiling_height": "FloatField - Shift balandligi (m)",
+          "smart_home": "BooleanField - Aqlli uy tizimi",
+          "inside_has": "ManyToManyField(InsideHas) - Ichida mavjud",
+          "view_window": "ManyToManyField(ViewWindow) - Deraza ko'rinishi"
+        },
+        "building_features": {
+          "year_construction": "PositiveSmallIntegerField - Qurilish yili",
+          "type_building": "ForeignKey(TypeBuilding) - Bino turi",
+          "elevator": "ManyToManyField(Elevator) - Lift",
+          "number_buildings": "PositiveSmallIntegerField - Binolar soni"
+        },
+        "utilities": {
+          "heating_system": "ManyToManyField(HeatingSystem) - Isitish tizimi",
+          "gas": "ManyToManyField(Gas) - Gaz",
+          "water": "ManyToManyField(Water) - Suv",
+          "electricity": "ForeignKey(Electrocity) - Elektr",
+          "sewerage": "BooleanField - Kanalizatsiya",
+          "air_conditioning_system": "ManyToManyField(AirConditioningSystem) - Konditsioner"
+        },
+        "parking_and_outdoor": {
+          "car_place": "PositiveSmallIntegerField - Avtomobil joylari",
+          "parking": "ManyToManyField(Parking) - Parkovka",
+          "garage": "ManyToManyField(Garage) - Garaj",
+          "pool": "ForeignKey(Pool) - Basseyn",
+          "nearby_has": "ManyToManyField(NearbyHas) - Yaqinida mavjud"
+        },
+        "commercial_and_land": {
+          "type_license": "ForeignKey(TypeLicence) - Litsenziya turi",
+          "type_land_plot": "ForeignKey(TypeLandPlot) - Yer uchastkasi turi",
+          "access_roads": "ManyToManyField(AccessRoads) - Yo'llar",
+          "location_of_object": "ManyToManyField(LocationOfObject) - Obyekt joylashuvi",
+          "object_status": "ForeignKey(ObjectStatus) - Obyekt holati",
+          "object_type": "ForeignKey(ObjectType) - Obyekt turi",
+          "objects_status_earth": "ForeignKey(ObjectStatusEarth) - Yer holati",
+          "railway_branch": "BooleanField - Temir yo'l tarmog'i"
+        },
+        "additional": {
+          "content": "RichTextField - Tavsif",
+          "content_advertising": "RichTextField - Reklama matni",
+          "build_house_images": "ManyToManyField(BuildHouseImage) - Rasmlar",
+          "sourse": "ForeignKey(Sourse) - Ma'lumot manbai",
+          "client": "ForeignKey(Client) - Mijoz",
+          "client_type": "ForeignKey(ClientType) - Mijoz turi",
+          "is_arxiv": "BooleanField - Arxivlanganmi",
+          "in_site": "BooleanField - Saytda ko'rsatilsinmi",
+          "who_can_view": "CharField - Kim ko'ra oladi (me/team)",
+          "user": "ForeignKey(CustomUser) - Yaratgan foydalanuvchi",
+          "team": "ForeignKey(Team) - Jamoa"
+        }
+      }
+    },
+
+    "2_API_ENDPOINTS": {
+      "base_api_url": "/api",
+      "authentication": {
+        "method": "JWT Bearer Token",
+        "login_endpoint": "/api/login/",
+        "register_endpoint": "/api/register/",
+        "token_refresh": "/api/token/refresh/",
+        "description": "Login qilib JWT token olish kerak"
+      },
+      "main_search_endpoint": {
+        "url": "/api/objects/",
+        "method": "GET",
+        "description": "Obyektlarni qidirish va filtrlash",
+        "filter_backend": "DjangoFilterBackend + SearchFilter",
+        "supports": [
+          "Query parameters filtering",
+          "Full text search",
+          "Range filters (min/max)",
+          "Multiple value filters (ManyToMany)"
+        ]
+      },
+      "detail_endpoint": {
+        "url": "/api/objects/{id}/",
+        "method": "GET",
+        "description": "Bitta obyektning batafsil ma'lumoti"
+      },
+      "reference_endpoints": {
+        "description": "Filtrlash uchun reference data",
+        "endpoints": [
+          "/api/Categorys/ - Kategoriyalar",
+          "/api/SubCategorys/ - Sub kategoriyalar",
+          "/api/SaleTypes/ - Sotuv turlari",
+          "/api/Rents/ - Ijara turlari",
+          "/api/StateRepairs/ - Ta'mir holati",
+          "/api/Furnitures/ - Mebel",
+          "/api/PropertyTypes/ - Mulk turlari",
+          "/api/TypeBuildings/ - Bino turlari",
+          "/api/addresses/ - Manzillar"
+        ]
+      }
+    },
+
+    "3_FIELD_MAPPING": {
+      "ai_to_crm_mapping": {
+        "property_type": {
+          "crm_field": "category",
+          "filter_param": "category",
+          "type": "ForeignKey ID",
+          "values_mapping": {
+            "apartment": "kvartira kategoriya ID",
+            "house": "uy kategoriya ID",
+            "villa": "villa kategoriya ID",
+            "commercial": "kommertsiya kategoriya ID",
+            "land": "yer uchastkasi kategoriya ID"
+          },
+          "note": "Avval /api/Categorys/ dan kategoriya ID larni olish kerak"
+        },
+        "price_min": {
+          "crm_field": "price_starting",
+          "filter_param": "min_price",
+          "type": "Float",
+          "description": "Minimal narx (USD yoki UZS)"
+        },
+        "price_max": {
+          "crm_field": "price_starting",
+          "filter_param": "max_price",
+          "type": "Float",
+          "description": "Maksimal narx"
+        },
+        "rooms": {
+          "crm_field": "rooms_numbers",
+          "filter_param": "rooms_numbers",
+          "type": "Integer",
+          "description": "Xonalar soni"
+        },
+        "bedrooms": {
+          "crm_field": "bedrooms_num",
+          "filter_param": "bedrooms_num",
+          "type": "Integer",
+          "description": "Yotoq xonalar soni"
+        },
+        "area_min": {
+          "crm_field": "total_area",
+          "filter_param": "min_area",
+          "type": "Float",
+          "description": "Minimal maydon (m²)"
+        },
+        "area_max": {
+          "crm_field": "total_area",
+          "filter_param": "max_area",
+          "type": "Float",
+          "description": "Maksimal maydon (m²)"
+        },
+        "floor_min": {
+          "crm_field": "floor",
+          "filter_param": "floor",
+          "type": "Integer",
+          "description": "Qavat (exact match)"
+        },
+        "floor_max": {
+          "crm_field": "floor_build",
+          "filter_param": "floor_build",
+          "type": "Integer",
+          "description": "Umumiy qavatlar soni"
+        },
+        "location": {
+          "crm_field": "address",
+          "filter_param": "search",
+          "type": "Text search",
+          "description": "Manzil bo'yicha qidirish (full text)"
+        },
+        "district": {
+          "crm_field": "address",
+          "filter_param": "search",
+          "type": "Text search",
+          "description": "Tuman/hudud nomi"
+        },
+        "furnished": {
+          "crm_field": "furniture",
+          "filter_param": "furniture",
+          "type": "ForeignKey ID",
+          "description": "Mebel bor/yo'q (ID orqali)"
+        },
+        "new_building": {
+          "crm_field": "year_construction",
+          "filter_param": "year_construction",
+          "type": "Integer",
+          "description": "Qurilish yili (masalan: 2020 dan keyingi = yangi bino)"
+        },
+        "repair_state": {
+          "crm_field": "state_repair",
+          "filter_param": "state_repair",
+          "type": "ForeignKey ID",
+          "description": "Ta'mirlash holati ID"
+        },
+        "has_parking": {
+          "crm_field": "parking",
+          "filter_param": "parking",
+          "type": "ManyToMany ID",
+          "description": "Parkovka ID"
+        },
+        "has_elevator": {
+          "crm_field": "elevator",
+          "filter_param": "elevator",
+          "type": "ManyToMany ID",
+          "description": "Lift ID"
+        },
+        "smart_home": {
+          "crm_field": "smart_home",
+          "filter_param": "smart_home",
+          "type": "Boolean",
+          "description": "Aqlli uy tizimi (true/false)"
+        },
+        "sale_type": {
+          "crm_field": "sale_type",
+          "filter_param": "sale_type",
+          "type": "ManyToMany ID",
+          "description": "Sotuv/Ijara (ID)"
+        }
+      },
+      
+      "response_mapping": {
+        "id": "id",
+        "title": "name",
+        "price": "price_starting",
+        "price_currency": "price_type",
+        "description": "content",
+        "short_description": "content_advertising",
+        "rooms": "rooms_numbers",
+        "bedrooms": "bedrooms_num",
+        "floor": "floor",
+        "total_floors": "floor_build",
+        "area": "total_area",
+        "living_area": "living_area",
+        "year_built": "year_construction",
+        "address": "address.full_address",
+        "district": "address.name",
+        "location_landmark": "address_landwarkr",
+        "house_number": "address_house_number",
+        "repair_state": "state_repair.name",
+        "furniture": "furniture.name",
+        "property_type": "category.name",
+        "building_type": "type_building.name",
+        "has_elevator": "elevator",
+        "has_parking": "parking",
+        "smart_home": "smart_home",
+        "images": "build_house_images",
+        "google_maps": "google_map"
+      }
+    },
+
+    "4_REQUEST_TEMPLATES": {
+      "authentication_request": {
+        "method": "POST",
+        "endpoint": "/api/login/",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "username": "your_username",
+          "password": "your_password"
+        },
+        "response_example": {
+          "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+          "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+        }
+      },
+      
+      "search_request_example_1": {
+        "description": "Toshkentda 3 xonali, 70-100 m², $50k-$80k kvartira",
+        "method": "GET",
+        "endpoint": "/api/objects/",
+        "headers": {
+          "Authorization": "Bearer {access_token}",
+          "Content-Type": "application/json"
+        },
+        "query_params": {
+          "category": "1",
+          "rooms_numbers": "3",
+          "min_area": "70",
+          "max_area": "100",
+          "min_price": "50000",
+          "max_price": "80000",
+          "search": "Toshkent"
+        },
+        "full_url_example": "/api/objects/?category=1&rooms_numbers=3&min_area=70&max_area=100&min_price=50000&max_price=80000&search=Toshkent"
+      },
+
+      "search_request_example_2": {
+        "description": "Yangi bino, liftli, mebellanмagan, 4 qavat",
+        "method": "GET",
+        "endpoint": "/api/objects/",
+        "query_params": {
+          "year_construction": "2020",
+          "elevator": "1",
+          "floor": "4",
+          "furniture": ""
+        },
+        "full_url_example": "/api/objects/?year_construction__gte=2020&elevator=1&floor=4"
+      },
+
+      "search_request_example_3": {
+        "description": "Aqlli uy, parkovkali, yaxshi ta'mirli",
+        "method": "GET",
+        "endpoint": "/api/objects/",
+        "query_params": {
+          "smart_home": "true",
+          "parking": "1",
+          "state_repair": "1"
+        }
+      }
+    },
+
+    "5_API_RESPONSE_FORMAT": {
+      "list_response_structure": {
+        "count": "Integer - Jami natijalar soni",
+        "next": "String - Keyingi sahifa URL (pagination)",
+        "previous": "String - Oldingi sahifa URL",
+        "results": "Array - Obyektlar ro'yxati"
+      },
+      
+      "single_object_example": {
+        "id": 123,
+        "name": "3 xonali kvartira Chilonzor tumani",
+        "slug": "3-xonali-kvartira-chilonzor-tumani-123",
+        "created_at": "2025-03-15T10:30:00Z",
+        "updated_at": "2025-03-20T14:20:00Z",
+        "category": {
+          "id": 1,
+          "name": "Kvartira"
+        },
+        "sub_category": [
+          {
+            "id": 2,
+            "name": "Uy-joy"
+          }
+        ],
+        "sale_type": [
+          {
+            "id": 1,
+            "name": "Sotuv"
+          }
+        ],
+        "rent": [],
+        "rooms_numbers": 3,
+        "floor": 5,
+        "floor_build": 9,
+        "bedrooms_num": 2,
+        "total_area": 85.5,
+        "living_area": 65.0,
+        "price_starting": 75000.0,
+        "price_bargain": true,
+        "price_type": "usd",
+        "commercial_price_starting": null,
+        "commercial_price_type": null,
+        "address": {
+          "id": 45,
+          "name": "Chilonzor",
+          "sub": 1,
+          "full_address": "Toshkent, Chilonzor tumani"
+        },
+        "address_house_number": "12A",
+        "address_landwarkr": "Metro Chilonzor yaqinida",
+        "destination": null,
+        "year_construction": 2022,
+        "state_repair": "Yaxshi ta'mir",
+        "furniture": "Mebellanmagan",
+        "balcony": [
+          {
+            "id": 1,
+            "name": "Balkon bor"
+          }
+        ],
+        "bathroom": [
+          {
+            "id": 1,
+            "name": "Alohida"
+          }
+        ],
+        "elevator": [
+          {
+            "id": 1,
+            "name": "Yo'lovchi lifti"
+          }
+        ],
+        "parking": [
+          {
+            "id": 1,
+            "name": "Yopiq parkovka"
+          }
+        ],
+        "type_building": "Ko'p qavatli",
+        "heating_system": [
+          {
+            "id": 1,
+            "name": "Markaziy"
+          }
+        ],
+        "gas": [
+          {
+            "id": 1,
+            "name": "Markaziy gaz"
+          }
+        ],
+        "water": [
+          {
+            "id": 1,
+            "name": "Markaziy suv"
+          }
+        ],
+        "electricity": "Markaziy elektr",
+        "smart_home": false,
+        "inside_has": [
+          {
+            "id": 1,
+            "name": "Konditsioner"
+          }
+        ],
+        "nearby_has": [
+          {
+            "id": 1,
+            "name": "Metro"
+          },
+          {
+            "id": 2,
+            "name": "Maktab"
+          }
+        ],
+        "build_house_images": [
+          {
+            "image": "/media/houses/image1.jpg"
+          },
+          {
+            "image": "/media/houses/image2.jpg"
+          }
+        ],
+        "content": "<p>Chilonzor tumanida joylashgan ajoyib 3 xonali kvartira...</p>",
+        "content_advertising": "Metro yaqinida, yangi ta'mirlangan",
+        "google_map": "41.2856,69.2034",
+        "is_arxiv": false,
+        "arxiv_content": null
+      }
+    },
+
+    "6_TELEGRAM_BOT_INTEGRATION_WORKFLOW": {
+      "step_1_parse_user_message": {
+        "description": "AI dan mijoz talablarini olish",
+        "ai_output_example": {
+          "property_type": "apartment",
+          "price_min": 50000,
+          "price_max": 80000,
+          "rooms": 3,
+          "area_min": 70,
+          "area_max": 100,
+          "location": "Chilonzor",
+          "furnished": false,
+          "new_building": true,
+          "has_elevator": true
+        }
+      },
+      
+      "step_2_get_reference_data": {
+        "description": "Kerakli reference ID larni olish",
+        "actions": [
+          "GET /api/Categorys/ - 'Kvartira' kategoriya ID",
+          "GET /api/Furnitures/ - 'Mebellanmagan' ID",
+          "GET /api/Elevators/ - Lift turlari ID"
+        ]
+      },
+      
+      "step_3_build_search_query": {
+        "description": "AI natijalarini CRM query ga o'girish",
+        "mapping_logic": {
+          "property_type_apartment": "category=1",
+          "price_range": "min_price=50000&max_price=80000",
+          "rooms": "rooms_numbers=3",
+          "area_range": "min_area=70&max_area=100",
+          "location": "search=Chilonzor",
+          "new_building": "year_construction__gte=2020",
+          "has_elevator": "elevator=1"
+        }
+      },
+      
+      "step_4_search_properties": {
+        "request": "GET /api/objects/?category=1&rooms_numbers=3&min_area=70&max_area=100&min_price=50000&max_price=80000&search=Chilonzor&year_construction__gte=2020&elevator=1",
+        "response": "List of matching properties"
+      },
+      
+      "step_5_format_telegram_response": {
+        "description": "CRM natijalarini Telegram message ga format qilish",
+        "message_template": "🏠 {name}\n\n💰 Narx: ${price_starting}\n📐 Maydon: {total_area} m²\n🚪 Xonalar: {rooms_numbers}\n🏢 Qavat: {floor}/{floor_build}\n📅 Qurilish yili: {year_construction}\n📍 Manzil: {address.full_address}\n🔑 {furniture}\n\n{content_advertising}"
+      }
+    },
+
+    "7_IMPORTANT_NOTES": {
+      "authentication": "Har bir so'rovda Bearer token ishlatish majburiy",
+      "pagination": "Natijalar sahifalanadi, 'next' va 'previous' linklar orqali boshqa sahifalarga o'tish mumkin",
+      "filtering": "Multiple filterlar birga ishlaydi (AND logic)",
+      "search": "search parametri full-text search qiladi (name, address, content)",
+      "manytomany": "ManyToMany fieldlar uchun bir nechta ID yuborish mumkin",
+      "currency": "price_type: 'usd' yoki 'sum'",
+      "in_site_filter": "Faqat in_site=true obyektlar API da ko'rinadi",
+      "permissions": "IsAuthenticatedOrReadOnly - login shart emas, lekin login qilgan yaxshiroq",
+      "error_handling": "401 - Unauthorized, 404 - Not Found, 400 - Bad Request"
+    },
+
+    "8_EXAMPLE_PYTHON_CODE": {
+      "description": "Telegram bot uchun Python kod namunasi",
+      "code": "import requests\n\nclass MegapolisCRM:\n    def __init__(self, base_url, username, password):\n        self.base_url = base_url\n        self.token = self.login(username, password)\n    \n    def login(self, username, password):\n        url = f'{self.base_url}/api/login/'\n        response = requests.post(url, json={'username': username, 'password': password})\n        return response.json()['access']\n    \n    def search_properties(self, filters):\n        url = f'{self.base_url}/api/objects/'\n        headers = {'Authorization': f'Bearer {self.token}'}\n        \n        # AI dan kelgan filterlarni CRM formatiga o'girish\n        params = self.map_filters(filters)\n        \n        response = requests.get(url, headers=headers, params=params)\n        return response.json()\n    \n    def map_filters(self, ai_filters):\n        params = {}\n        \n        if 'rooms' in ai_filters:\n            params['rooms_numbers'] = ai_filters['rooms']\n        \n        if 'price_min' in ai_filters:\n            params['min_price'] = ai_filters['price_min']\n        \n        if 'price_max' in ai_filters:\n            params['max_price'] = ai_filters['price_max']\n        \n        if 'area_min' in ai_filters:\n            params['min_area'] = ai_filters['area_min']\n        \n        if 'area_max' in ai_filters:\n            params['max_area'] = ai_filters['area_max']\n        \n        if 'location' in ai_filters:\n            params['search'] = ai_filters['location']\n        \n        if 'category_id' in ai_filters:\n            params['category'] = ai_filters['category_id']\n        \n        return params\n    \n    def format_for_telegram(self, property_data):\n        message = f\"🏠 {property_data['name']}\\n\\n\"\n        message += f\"💰 Narx: ${property_data['price_starting']} {property_data['price_type']}\\n\"\n        message += f\"📐 Maydon: {property_data['total_area']} m²\\n\"\n        message += f\"🚪 Xonalar: {property_data['rooms_numbers']}\\n\"\n        message += f\"🏢 Qavat: {property_data['floor']}/{property_data['floor_build']}\\n\"\n        message += f\"📍 {property_data['address']['full_address']}\\n\"\n        return message\n\n# Ishlatish\ncrm = MegapolisCRM('https://megapolis1.uz', 'bot_user', 'bot_password')\nresults = crm.search_properties({'rooms': 3, 'price_min': 50000, 'price_max': 80000})\n\nfor prop in results['results']:\n    message = crm.format_for_telegram(prop)\n    # Send to Telegram..."
+    }
+  }
+}

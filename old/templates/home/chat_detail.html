@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Chat - {{ chat.title }} - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-comments me-2"></i>
+        {{ chat.title }}
+    </h1>
+    <div>
+        <a href="?load=1" class="btn btn-success me-2">
+            <i class="fas fa-sync-alt me-1"></i>
+            Yangilash
+        </a>
+        <a href="{% url 'chats_list' %}?account={{ telegram_account.id }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Orqaga
+        </a>
+    </div>
+</div>
+
+<!-- Chat Messages -->
+<div class="card mb-4" style="height: 500px;">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-message me-2"></i>
+            Xabarlar
+        </h5>
+    </div>
+    <div class="card-body overflow-auto" id="messages-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message mb-3 {% if message.is_outgoing %}text-end{% endif %}">
+                    <div class="d-inline-block p-3 rounded {% if message.is_outgoing %}bg-primary text-white{% else %}bg-light border{% endif %}" style="max-width: 70%;">
+                        <div class="message-text">{{ message.text|linebreaks }}</div>
+                        <small class="{% if message.is_outgoing %}text-white-50{% else %}text-muted{% endif %} d-block mt-1">
+                            {% if not message.is_outgoing %}
+                                <strong>{{ message.sender_id }}</strong> • 
+                            {% endif %}
+                            {{ message.date|date:"H:i" }}
+                        </small>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <p>Hali xabar yo'q</p>
+                <a href="?load=1" class="btn btn-primary mt-2">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Xabarlarni yuklash
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Send Message Form -->
+<div class="card">
+    <div class="card-body">
+        <form id="message-form" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-9">
+                <textarea class="form-control" 
+                          id="message-text" 
+                          name="message" 
+                          rows="3" 
+                          placeholder="Xabaringizni yozing..." 
+                          required></textarea>
+            </div>
+            <div class="col-md-3">
+                <div class="d-grid gap-2 h-100">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-1"></i>
+                        Yuborish
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="sendAIMessage()">
+                        <i class="fas fa-robot me-1"></i>
+                        AI Javob
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const messageText = document.getElementById('message-text').value.trim();
+    if (!messageText) {
+        alert('Xabar matni bo\'sh bo\'lmasin');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', messageText);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const originalHtml = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
+    submitBtn.disabled = true;
+    
+    fetch(`{% url 'send_message_to_chat' telegram_account.id chat.chat_id %}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add message to chat
+            const messagesContainer = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message mb-3 text-end';
+            messageDiv.innerHTML = `
+                <div class="d-inline-block p-3 rounded bg-primary text-white" style="max-width: 70%;">
+                    <div class="message-text">${messageText.replace(/\n/g, '<br>')}</div>
+                    <small class="opacity-75 d-block mt-1">
+                        ${new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}
+                    </small>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            
+            // Clear form and scroll to bottom
+            document.getElementById('message-text').value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            alert('Xabar yuborildi');
+        } else {
+            alert('Xatolik: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalHtml;
+        submitBtn.disabled = false;
+    });
+});
+
+function sendAIMessage() {
+    const messageText = document.getElementById('message-text').value.trim();
+    if (!messageText) {
+        alert('AI javob uchun savol yozing');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', messageText);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    const aiBtn = document.querySelector('button[onclick="sendAIMessage()"]');
+    const originalHtml = aiBtn.innerHTML;
+    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI ishlamoqda...';
+    aiBtn.disabled = true;
+    
+    fetch(`{% url 'send_ai_message' telegram_account.id chat.chat_id %}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add AI message to chat
+            const messagesContainer = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message mb-3 text-end';
+            messageDiv.innerHTML = `
+                <div class="d-inline-block p-3 rounded bg-success text-white" style="max-width: 70%;">
+                    <div class="message-text">${data.ai_response.replace(/\n/g, '<br>')}</div>
+                    <small class="opacity-75 d-block mt-1">
+                        <i class="fas fa-robot me-1"></i>AI - ${new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}
+                    </small>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            
+            // Clear form and scroll to bottom
+            document.getElementById('message-text').value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            alert('AI xabar yuborildi');
+        } else {
+            alert('Xatolik: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        aiBtn.innerHTML = originalHtml;
+        aiBtn.disabled = false;
+    });
+}
+
+// ...existing code...
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('messages-container');
+    container.scrollTop = container.scrollHeight;
+});
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
-from django.utils.html import format_html, mark_safe
-from .models import CRMConfiguration, AIConfiguration
+from django.utils.html import mark_safe
+from .models import CRMConfiguration, AIConfiguration, UzbekVoiceConfiguration
 
 
 @admin.register(CRMConfiguration)
@@ -40,11 +40,11 @@ class CRMConfigurationAdmin(admin.ModelAdmin):
         Holat badge ko'rsatish
         """
         if obj.is_connected:
-            return format_html(
+            return mark_safe(
                 '<span style="color: green; font-weight: bold;">● Ulangan</span>'
             )
         else:
-            return format_html(
+            return mark_safe(
                 '<span style="color: red; font-weight: bold;">● Ulanmagan</span>'
             )
     status_badge.short_description = "Holat"
@@ -53,7 +53,7 @@ class CRMConfigurationAdmin(admin.ModelAdmin):
         """
         CRM test tugmasi
         """
-        return format_html(
+        return mark_safe(
             '<a class="button" href="#" onclick="alert(\'Test xususiyati tez orada!\');">Test ulanish</a>'
         )
     test_button.short_description = "Harakat"
@@ -114,12 +114,39 @@ class AIConfigurationAdmin(admin.ModelAdmin):
 
     def status_badge(self, obj):
         if obj.api_key:
-            return format_html('<span style="color: green; font-weight: bold;">● Sozlangan</span>')
-        return format_html('<span style="color: red; font-weight: bold;">● Sozlanmagan</span>')
+            return mark_safe('<span style="color: green; font-weight: bold;">● Sozlangan</span>')
+        return mark_safe('<span style="color: red; font-weight: bold;">● Sozlanmagan</span>')
     status_badge.short_description = "Holat"
 
     def has_add_permission(self, request):
         return not AIConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(UzbekVoiceConfiguration)
+class UzbekVoiceConfigurationAdmin(admin.ModelAdmin):
+    """
+    UzbekVoice.ai STT Configuration admin panel
+    """
+    list_display = ('__str__', 'default_language', 'status_badge', 'is_active', 'updated_at')
+    fieldsets = (
+        ('UzbekVoice.ai STT Sozlamalari', {
+            'fields': ('api_key', 'api_url', 'default_language', 'is_active'),
+            'description': 'UzbekVoice.ai dan olingan API kalitni shu yerga kiriting. '
+                           'API key olish: https://uzbekvoice.ai da ro\'yxatdan o\'ting.'
+        }),
+    )
+
+    def status_badge(self, obj):
+        if obj.api_key:
+            return mark_safe('<span style="color: green; font-weight: bold;">● Sozlangan</span>')
+        return mark_safe('<span style="color: red; font-weight: bold;">● Sozlanmagan</span>')
+    status_badge.short_description = "Holat"
+
+    def has_add_permission(self, request):
+        return not UzbekVoiceConfiguration.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False

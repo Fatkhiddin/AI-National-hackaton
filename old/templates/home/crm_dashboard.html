@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+{% block title %}CRM Integration - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            <i class="fas fa-building me-2"></i>
+            CRM Integration - Uy-joy Qidiruv
+        </h1>
+    </div>
+
+    <!-- Info Alert -->
+    <div class="alert alert-info mb-4">
+        <h6 class="alert-heading">
+            <i class="fas fa-info-circle me-2"></i>
+            CRM Integratsiya haqida
+        </h6>
+        <p class="mb-2">
+            Bu tizim Telegram suhbatlarini tahlil qilib, avtomatik ravishda CRM tizimingizdan mos uylarni topadi.
+        </p>
+        <ul class="mb-0">
+            <li>AI suhbatni o'qiydi va mijoz talablarini aniqlaydi</li>
+            <li>Talablar sizning CRM strukturangizga mos formatda yuboriladi</li>
+            <li>CRM dan kelgan natijalar Telegram ga avtomatik yuboriladi</li>
+        </ul>
+    </div>
+
+    <!-- CRM Providers Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-database me-2"></i>
+                    CRM Provayderlar
+                </h5>
+                <button onclick="showCRMProviderModal()" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>
+                    CRM Qo'shish
+                </button>
+            </div>
+            
+            <div id="crmProvidersContainer">
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                    <p>Yuklanmoqda...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Searches -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="fas fa-history me-2"></i>
+                Oxirgi Qidiruvlar
+            </h5>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sana</th>
+                            <th>Foydalanuvchi</th>
+                            <th>CRM</th>
+                            <th>Talablar</th>
+                            <th>Natijalar</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for search in recent_searches %}
+                        <tr>
+                            <td>{{ search.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ search.username|default:search.chat_id }}</td>
+                            <td>{{ search.crm_provider.name }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if search.extracted_requirements.property_type %}
+                                        {{ search.extracted_requirements.property_type }}
+                                    {% endif %}
+                                    {% if search.extracted_requirements.rooms %}
+                                        • {{ search.extracted_requirements.rooms }} xona
+                                    {% endif %}
+                                    {% if search.extracted_requirements.price_max %}
+                                        • ${{ search.extracted_requirements.price_max }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ search.results_count }} ta
+                                </span>
+                            </td>
+                            <td>
+                                {% if search.status == 'success' %}
+                                    <span class="badge bg-success">Muvaffaqiyatli</span>
+                                {% elif search.status == 'failed' %}
+                                    <span class="badge bg-danger">Xatolik</span>
+                                {% elif search.status == 'no_results' %}
+                                    <span class="badge bg-warning">Topilmadi</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Kutilmoqda</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                Hali qidiruvlar yo'q
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CRM Provider Modal -->
+<div class="modal fade" id="crmProviderModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>
+                    CRM Provider Qo'shish
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="crmProviderForm" onsubmit="event.preventDefault(); saveCRMProvider();">
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#basicTab">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Asosiy
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#mappingTab">
+                                <i class="fas fa-map me-1"></i>
+                                Field Mapping
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#promptTab">
+                                <i class="fas fa-comment-dots me-1"></i>
+                                AI Prompt
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Basic Tab -->
+                        <div class="tab-pane fade show active" id="basicTab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="crm_name" class="form-label">
+                                        CRM Nomi *
+                                    </label>
+                                    <input type="text" id="crm_name" class="form-control" 
+                                           placeholder="Masalan: Uy-joy CRM" required>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="crm_type" class="form-label">
+                                        CRM Turi *
+                                    </label>
+                                    <select id="crm_type" class="form-select" required>
+                                        <option value="custom_api">Custom API</option>
+                                        <option value="amocrm">AmoCRM</option>
+                                        <option value="bitrix24">Bitrix24</option>
+                                        <option value="simple_json">Simple JSON File</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label for="api_url" class="form-label">
+                                        API URL *
+                                    </label>
+                                    <input type="url" id="api_url" class="form-control" 
+                                           placeholder="https://api.example.com" required>
+                                    <small class="form-text text-muted">
+                                        CRM API endpoint manzili
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="api_key" class="form-label">
+                                        API Key
+                                    </label>
+                                    <input type="password" id="api_key_crm" class="form-control" 
+                                           placeholder="API kalitini kiriting">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="api_secret" class="form-label">
+                                        API Secret (ixtiyoriy)
+                                    </label>
+                                    <input type="password" id="api_secret" class="form-control" 
+                                           placeholder="API secret">
+                                </div>
+
+                                <div class="col-12">
+                                    <button type="button" class="btn btn-outline-primary" onclick="testCRMConnection()">
+                                        <i class="fas fa-vial me-1"></i>
+                                        Connection Test
+                                    </button>
+                                    <div id="crmTestResult" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Mapping Tab -->
+                        <div class="tab-pane fade" id="mappingTab">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Field Mapping:</strong> AI dan kelgan ma'lumotlarni CRM strukturangizga moslashtiring
+                            </div>
+
+                            <label class="form-label fw-bold">Field Mapping (JSON format)</label>
+                            <textarea id="field_mapping" class="form-control font-monospace" rows="15" 
+                                      placeholder='Misol:
+{
+  "property_fields": {
+    "price_min": "price.min",
+    "price_max": "price.max",
+    "rooms": "rooms",
+    "area": "area",
+    "location": "district"
+  },
+  "response_format": {
+    "id": "id",
+    "title": "title",
+    "price": "price",
+    "description": "description"
+  }
+}'></textarea>
+                            <small class="form-text text-muted">
+                                Chap tomon - AI dan keladigan field, O'ng tomon - CRM dagi field
+                            </small>
+
+                            <div class="mt-3">
+                                <label class="form-label fw-bold">Request Template (JSON)</label>
+                                <textarea id="request_template" class="form-control font-monospace" rows="10"
+                                          placeholder='Misol:
+{
+  "method": "POST",
+  "endpoint": "/api/properties/search",
+  "headers": {
+    "Authorization": "Bearer {api_key}",
+    "Content-Type": "application/json"
+  },
+  "body_template": {
+    "filters": "{search_criteria}",
+    "limit": 10
+  }
+}'></textarea>
+                            </div>
+                        </div>
+
+                        <!-- AI Prompt Tab -->
+                        <div class="tab-pane fade" id="promptTab">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Ixtiyoriy:</strong> Bo'sh qoldiring, default prompt ishlatiladi
+                            </div>
+
+                            <label class="form-label">AI Extraction Prompt</label>
+                            <textarea id="extraction_prompt" class="form-control" rows="12"
+                                      placeholder="AI ga beriladigan prompt - suhbatdan uy talablarini chiqarish uchun"></textarea>
+                            <small class="form-text text-muted">
+                                Bu prompt AI ga yuboriladi va suhbatdan mijoz talablarini JSON formatda chiqaradi
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>
+                        Bekor qilish
+                    </button>
+                    <button type="submit" class="btn btn-success" id="saveCRMProviderBtn">
+                        <i class="fas fa-save me-1"></i>
+                        Saqlash
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentEditingCRMProvider = null;
+
+// Load CRM providers on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCRMProviders();
+});
+
+async function loadCRMProviders() {
+    try {
+        const response = await fetch('{% url "crm_provider_list" %}');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayCRMProviders(data.providers);
+        }
+    } catch (error) {
+        console.error('Error loading CRM providers:', error);
+    }
+}
+
+function displayCRMProviders(providers) {
+    const container = document.getElementById('crmProvidersContainer');
+    
+    if (providers.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-database fa-3x mb-3"></i>
+                <p>CRM provider mavjud emas</p>
+                <button onclick="showCRMProviderModal()" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    Birinchi CRM ni qo'shing
+                </button>
+            </div>`;
+        return;
+    }
+    
+    container.innerHTML = providers.map(p => `
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title">
+                            <i class="fas fa-database text-primary me-2"></i>
+                            ${p.name}
+                        </h5>
+                        <p class="text-muted mb-2">
+                            <small>
+                                <strong>Turi:</strong> ${p.crm_type_display}<br>
+                                <strong>API:</strong> ${p.api_url}<br>
+                                <strong>Yaratilgan:</strong> ${new Date(p.created_at).toLocaleDateString('uz-UZ')}
+                            </small>
+                        </p>
+                        <span class="badge bg-${p.is_active ? 'success' : 'secondary'}">
+                            ${p.is_active ? 'Faol' : 'Nofaol'}
+                        </span>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="testCRMProvider(${p.id})" class="btn btn-sm btn-outline-primary" title="Test">
+                            <i class="fas fa-vial"></i>
+                        </button>
+                        <button onclick="editCRMProvider(${p.id})" class="btn btn-sm btn-outline-secondary" title="Tahrirlash">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteCRMProvider(${p.id}, '${p.name}')" class="btn btn-sm btn-outline-danger" title="O'chirish">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showCRMProviderModal() {
+    currentEditingCRMProvider = null;
+    document.getElementById('crmProviderForm').reset();
+    
+    // Set default JSON examples
+    document.getElementById('field_mapping').value = JSON.stringify({
+        "property_fields": {
+            "price_min": "price.min",
+            "price_max": "price.max",
+            "rooms": "rooms",
+            "area": "area",
+            "location": "district"
+        },
+        "response_format": {
+            "id": "id",
+            "title": "title",
+            "price": "price",
+            "description": "description"
+        }
+    }, null, 2);
+    
+    document.getElementById('request_template').value = JSON.stringify({
+        "method": "POST",
+        "endpoint": "/api/properties/search",
+        "headers": {
+            "Authorization": "Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        "body_template": {
+            "filters": "{search_criteria}",
+            "limit": 10
+        }
+    }, null, 2);
+    
+    const modal = new bootstrap.Modal(document.getElementById('crmProviderModal'));
+    modal.show();
+}
+
+async function saveCRMProvider() {
+    const btn = document.getElementById('saveCRMProviderBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saqlanmoqda...';
+    
+    try {
+        const data = {
+            name: document.getElementById('crm_name').value,
+            crm_type: document.getElementById('crm_type').value,
+            api_url: document.getElementById('api_url').value,
+            api_key: document.getElementById('api_key_crm').value,
+            api_secret: document.getElementById('api_secret').value,
+            field_mapping: JSON.parse(document.getElementById('field_mapping').value || '{}'),
+            request_template: JSON.parse(document.getElementById('request_template').value || '{}'),
+            extraction_prompt: document.getElementById('extraction_prompt').value,
+            is_active: true
+        };
+        
+        const url = currentEditingCRMProvider 
+            ? `/crm/providers/${currentEditingCRMProvider}/`
+            : '{% url "crm_provider_create" %}';
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            bootstrap.Modal.getInstance(document.getElementById('crmProviderModal')).hide();
+            loadCRMProviders();
+        } else {
+            alert('❌ Xatolik: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i> Saqlash';
+    }
+}
+
+async function testCRMProvider(providerId) {
+    try {
+        const response = await fetch(`/crm/providers/${providerId}/test/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+async function deleteCRMProvider(providerId, name) {
+    if (!confirm(`"${name}" CRM provider o'chirilsinmi?`)) return;
+    
+    try {
+        const response = await fetch(`/crm/providers/${providerId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            loadCRMProviders();
+        } else {
+            alert('❌ ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% endblock %}

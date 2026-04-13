@@ -216,3 +216,52 @@ class AIConfiguration(models.Model):
         """
         config, created = AIConfiguration.objects.get_or_create(id=1)
         return config
+
+
+class UzbekVoiceConfiguration(models.Model):
+    """
+    UzbekVoice.ai STT API konfiguratsiyasi
+    Admin paneldan UZBEKVOICE_API_KEY kiritiladi
+    """
+    api_key = models.CharField(
+        max_length=500,
+        verbose_name="UzbekVoice API Key",
+        help_text="UzbekVoice.ai dan olingan API kalit (Authorization header uchun)",
+        blank=True,
+        default=""
+    )
+    api_url = models.URLField(
+        max_length=500,
+        verbose_name="API URL",
+        default="https://uzbekvoice.ai/api/v1/stt",
+        help_text="UzbekVoice.ai STT API endpoint"
+    )
+    default_language = models.CharField(
+        max_length=10,
+        choices=[
+            ('uz', "O'zbek"),
+            ('ru', 'Rus'),
+            ('ru-uz', "O'zbek-Rus (Aralash)"),
+        ],
+        default='uz',
+        verbose_name="Default til"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Faol"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "UzbekVoice STT Configuration"
+        verbose_name_plural = "UzbekVoice STT Configurations"
+
+    def __str__(self):
+        status = "✓ Sozlangan" if self.api_key else "✗ Sozlanmagan"
+        return f"UzbekVoice STT ({status})"
+
+    @staticmethod
+    def get_config():
+        config, created = UzbekVoiceConfiguration.objects.get_or_create(id=1)
+        return config

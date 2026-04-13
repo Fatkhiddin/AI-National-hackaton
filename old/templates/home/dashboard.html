@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-chart-line me-2"></i>
+        Dashboard
+    </h1>
+    <div>
+        <a href="{% url 'mass_messaging' %}" class="btn btn-primary">
+            <i class="fas fa-paper-plane me-1"></i>
+            Mass Messaging
+        </a>
+        <a href="{% url 'add_telegram_account' %}" class="btn btn-outline-primary">
+            <i class="fas fa-plus me-1"></i>
+            Yangi Account
+        </a>
+        <a href="{% url 'import_contacts' %}" class="btn btn-success">
+            <i class="fas fa-file-import me-1"></i>
+            Import Kontaktlar
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fab fa-telegram-plane fa-3x mb-3"></i>
+                <h3 class="mb-1">{{ total_accounts }}</h3>
+                <p class="mb-0">Telegram Accounts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-address-book fa-3x mb-3"></i>
+                <h3 class="mb-1">{{ total_contacts }}</h3>
+                <p class="mb-0">Kontaktlar</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <h3 class="mb-1">{{ total_chats }}</h3>
+                <p class="mb-0">Chatlar</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <i class="fas fa-envelope fa-3x mb-3"></i>
+                <h3 class="mb-1">{{ total_messages }}</h3>
+                <p class="mb-0">Xabarlar</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Telegram Accounts -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fab fa-telegram-plane me-2"></i>
+                    Telegram Accounts
+                </h5>
+                <a href="{% url 'telegram_accounts' %}" class="btn btn-outline-primary btn-sm">
+                    Barchasini ko'rish
+                </a>
+            </div>
+            <div class="card-body">
+                {% if telegram_accounts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Telefon</th>
+                                    <th>Session</th>
+                                    <th>Holat</th>
+                                    <th>Yaratilgan</th>
+                                    <th>Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for account in telegram_accounts %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ account.phone_number }}</strong>
+                                        </td>
+                                        <td>{{ account.session_name }}</td>
+                                        <td>
+                                            {% if account.is_active %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>
+                                                    Faol
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-pause me-1"></i>
+                                                    Nofaol
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ account.created_at|date:"d.m.Y H:i" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if account.is_active %}
+                                                    <a href="{% url 'contacts_list' %}?account={{ account.id }}" 
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-address-book"></i>
+                                                    </a>
+                                                    <a href="{% url 'chats_list_new' %}" 
+                                                       class="btn btn-outline-success btn-sm"
+                                                       title="Telegram Style Chats">
+                                                        <i class="fas fa-comments"></i>
+                                                    </a>
+                                                    <a href="{% url 'telegram_web_client' %}?account={{ account.id }}" 
+                                                       class="btn btn-outline-primary btn-sm" title="Telegram Web">
+                                                        <i class="fab fa-telegram"></i>
+                                                    </a>
+                                                    <a href="{% url 'ai_chat_interface' account.id %}" 
+                                                       class="btn btn-outline-info btn-sm" title="AI Chat">
+                                                        <i class="fas fa-robot"></i>
+                                                    </a>
+                                                    <button onclick="syncTelegramContacts({{ account.id }})" 
+                                                            class="btn btn-outline-warning btn-sm">
+                                                        <i class="fas fa-sync-alt"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <a href="{% url 'verify_telegram_account' %}?account_id={{ account.id }}&mode=verify" 
+                                                       class="btn btn-warning btn-sm me-1" title="Haqiqiy tasdiqlash">
+                                                        <i class="fas fa-mobile-alt"></i>
+                                                    </a>
+                                                    <button onclick="checkAccountStatus({{ account.id }})" 
+                                                            class="btn btn-info btn-sm me-1" title="Holatni tekshirish">
+                                                        <i class="fas fa-heartbeat"></i>
+                                                    </button>
+                                                    <a href="{% url 'verify_telegram_account' %}?account_id={{ account.id }}&mode=simple" 
+                                                       class="btn btn-success btn-sm" title="Oddiy faollashtirish">
+                                                        <i class="fas fa-toggle-on"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fab fa-telegram-plane fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Hali Telegram account qo'shilmagan</h5>
+                        <p class="text-muted">Birinchi Telegram accountingizni qo'shing</p>
+                        <a href="{% url 'add_telegram_account' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Account Qo'shish
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Tez Amallar
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'mass_messaging' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-paper-plane me-2 text-primary"></i>
+                        Mass messaging - Ko'plab contactlarga xabar yuborish
+                    </a>
+                    <a href="{% url 'chats_list_new' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-comments me-2 text-success"></i>
+                        Telegram Style Chats
+                    </a>
+                    <a href="{% url 'import_contacts' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-import me-2 text-success"></i>
+                        Excel dan kontakt import qilish
+                    </a>
+                    <a href="{% url 'ai_integration' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-robot me-2 text-info"></i>
+                        AI Integration sozlash
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tools me-2 text-warning"></i>
+                        Admin panelga kirish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Ma'lumot
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6><i class="fas fa-check-circle text-success me-2"></i>Imkoniyatlar:</h6>
+                    <ul class="list-unstyled ms-3">
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> Bir nechta Telegram account boshqarish</li>
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> Excel dan kontakt import qilish</li>
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> Mass messaging - Ko'pga xabar yuborish</li>
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> AI bilan avtomatik xabar yuborish</li>
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> Spam detection va himoya</li>
+                        <li><i class="fas fa-chevron-right me-1 text-muted"></i> Telegram Style chat interface</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
