@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Takliflar - Mijozlar Qiziqishi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-heart-fill text-danger"></i> Takliflar
+                    <small class="text-muted">Mijozlar Qiziqish Bildirgan Uylar</small>
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-list-check"></i> Jami
+                    </h5>
+                    <h2 class="mb-0">{{ total_interests }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-check-circle"></i> Qiziqdi
+                    </h5>
+                    <h2 class="mb-0">{{ interested_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-x-circle"></i> Rad Etdi
+                    </h5>
+                    <h2 class="mb-0">{{ rejected_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-eye"></i> Ko'rdi
+                    </h5>
+                    <h2 class="mb-0">{{ viewed_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Hammasi</option>
+                        <option value="interested" {% if status_filter == 'interested' %}selected{% endif %}>✅ Qiziqdi</option>
+                        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>❌ Rad etdi</option>
+                        <option value="viewed" {% if status_filter == 'viewed' %}selected{% endif %}>👁 Ko'rdi</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Qidirish</label>
+                    <input type="text" name="q" class="form-control" placeholder="Mijoz, telefon, uy №..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Qidirish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Interests Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-table"></i> Takliflar Ro'yxati
+                <span class="badge bg-primary">{{ interests.paginator.count }} ta</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if interests %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Uy №</th>
+                            <th>Mijoz</th>
+                            <th>Kontakt</th>
+                            <th>Narx</th>
+                            <th>Xonalar</th>
+                            <th>Maydon</th>
+                            <th>Status</th>
+                            <th>Sana</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interest in interests %}
+                        <tr>
+                            <td>
+                                <strong>#{{ interest.property_id }}</strong>
+                                {% if interest.property_data.title %}
+                                <br><small class="text-muted">{{ interest.property_data.title|truncatewords:5 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <i class="bi bi-person"></i> {{ interest.username|default:"N/A" }}
+                                <br><small class="text-muted">ID: {{ interest.chat_id }}</small>
+                            </td>
+                            <td>
+                                {% if interest.contact %}
+                                <i class="bi bi-phone"></i> {{ interest.contact.phone_number }}
+                                <br><small class="text-muted">{{ interest.contact.name|default:"N/A" }}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if interest.property_data.price %}
+                                <strong>${{ interest.property_data.price|floatformat:0 }}</strong>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if interest.property_data.rooms %}
+                                <i class="bi bi-door-open"></i> {{ interest.property_data.rooms }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if interest.property_data.area %}
+                                {{ interest.property_data.area }} m²
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if interest.status == 'interested' %}
+                                <span class="badge bg-success">✅ Qiziqdi</span>
+                                {% elif interest.status == 'rejected' %}
+                                <span class="badge bg-danger">❌ Rad etdi</span>
+                                {% else %}
+                                <span class="badge bg-info">👁 Ko'rdi</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ interest.created_at|date:"d.m.Y H:i" }}</small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="viewInterest({{ interest.id }})">
+                                    <i class="bi bi-eye"></i> Ko'rish
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if interests.has_other_pages %}
+            <div class="card-footer">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if interests.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ interests.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Oldingi</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                                {{ interests.number }} / {{ interests.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if interests.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ interests.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Keyingi</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="text-muted mt-3">Hali hech qanday taklif yo'q</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Interest Detail Modal -->
+<div class="modal fade" id="interestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Taklif Tafsilotlari</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="interestDetailContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yuklanmoqda...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewInterest(interestId) {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('interestModal'));
+    modal.show();
+    
+    // Load interest details
+    fetch(`/property-interests/${interestId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const interest = data.interest;
+                const propData = interest.property_data;
+                
+                let html = '<div class="row">';
+                
+                // Property Info
+                html += '<div class="col-md-6">';
+                html += '<h6 class="border-bottom pb-2">Uy Ma\'lumotlari</h6>';
+                html += `<p><strong>Uy №:</strong> #${interest.property_id}</p>`;
+                
+                if (propData.title) {
+                    html += `<p><strong>Sarlavha:</strong> ${propData.title}</p>`;
+                }
+                if (propData.price) {
+                    html += `<p><strong>Narx:</strong> $${parseFloat(propData.price).toLocaleString()}</p>`;
+                }
+                if (propData.rooms) {
+                    html += `<p><strong>Xonalar:</strong> ${propData.rooms}</p>`;
+                }
+                if (propData.area) {
+                    html += `<p><strong>Maydon:</strong> ${propData.area} m²</p>`;
+                }
+                if (propData.location) {
+                    html += `<p><strong>Mo'ljal:</strong> ${propData.location}</p>`;
+                }
+                html += '</div>';
+                
+                // Customer Info
+                html += '<div class="col-md-6">';
+                html += '<h6 class="border-bottom pb-2">Mijoz Ma\'lumotlari</h6>';
+                html += `<p><strong>Username:</strong> ${interest.username || 'N/A'}</p>`;
+                html += `<p><strong>Chat ID:</strong> ${interest.chat_id}</p>`;
+                
+                if (interest.contact) {
+                    html += `<p><strong>Telefon:</strong> ${interest.contact.phone}</p>`;
+                    if (interest.contact.name) {
+                        html += `<p><strong>Ism:</strong> ${interest.contact.name}</p>`;
+                    }
+                }
+                
+                let statusBadge = '';
+                if (interest.status === 'interested') {
+                    statusBadge = '<span class="badge bg-success">✅ Qiziqdi</span>';
+                } else if (interest.status === 'rejected') {
+                    statusBadge = '<span class="badge bg-danger">❌ Rad etdi</span>';
+                } else {
+                    statusBadge = '<span class="badge bg-info">👁 Ko\'rdi</span>';
+                }
+                html += `<p><strong>Status:</strong> ${statusBadge}</p>`;
+                html += `<p><strong>Sana:</strong> ${new Date(interest.created_at).toLocaleString('uz-UZ')}</p>`;
+                html += '</div>';
+                
+                html += '</div>';
+                
+                document.getElementById('interestDetailContent').innerHTML = html;
+            } else {
+                document.getElementById('interestDetailContent').innerHTML = 
+                    '<div class="alert alert-danger">Xatolik yuz berdi</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('interestDetailContent').innerHTML = 
+                '<div class="alert alert-danger">Yuklashda xatolik</div>';
+        });
+}
+</script>
+
+<style>
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.table > :not(caption) > * > * {
+    padding: 1rem 0.75rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}Telegram AI Dashboard{% endblock %}
+{% block page_title %}Telegram AI Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: 16px 16px 0 0;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(99,102,241,0.3);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .stat-card.purple::before { background: linear-gradient(90deg, #6366f1, #a855f7); }
+    .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+    .stat-card.green::before { background: linear-gradient(90deg, #22c55e, #10b981); }
+    .stat-card.orange::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .stat-icon {
+        width: 56px; height: 56px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; margin-bottom: 16px;
+    }
+    .stat-card.purple .stat-icon { background: rgba(99,102,241,0.15); }
+    .stat-card.blue .stat-icon { background: rgba(59,130,246,0.15); }
+    .stat-card.green .stat-icon { background: rgba(34,197,94,0.15); }
+    .stat-card.orange .stat-icon { background: rgba(245,158,11,0.15); }
+    .stat-value {
+        font-size: 2rem; font-weight: 800; line-height: 1;
+        margin-bottom: 4px;
+    }
+    .stat-label {
+        font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;
+    }
+
+    .quick-action {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 20px;
+        display: flex; align-items: center; gap: 16px;
+        text-decoration: none; color: var(--text-primary);
+        transition: all 0.3s;
+    }
+    .quick-action:hover {
+        background: var(--bg-card-hover);
+        border-color: rgba(99,102,241,0.3);
+        transform: translateY(-2px);
+        color: var(--text-primary);
+    }
+    .quick-action .qa-icon {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+    }
+    .quick-action .qa-title { font-weight: 600; font-size: 0.95rem; }
+    .quick-action .qa-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+    .account-row {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex; align-items: center; gap: 16px;
+        margin-bottom: 8px;
+        transition: all 0.2s;
+    }
+    .account-row:hover { background: var(--bg-card-hover); }
+    .account-avatar {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(135deg, #0088cc, #29b6f6);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; color: white; flex-shrink: 0;
+    }
+    .badge-active {
+        background: rgba(34,197,94,0.15); color: #86efac;
+        border: 1px solid rgba(34,197,94,0.2);
+        padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-inactive {
+        background: rgba(245,158,11,0.15); color: #fde68a;
+        border: 1px solid rgba(245,158,11,0.2);
+        padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.5rem;">Telegram AI Dashboard</h2>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">Telegram accountlaringiz va faoliyatingiz umumiy ko'rinishi</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'telegramai:mass_messaging' %}" class="btn btn-primary">
+            📨 Mass Messaging
+        </a>
+        <a href="{% url 'telegramai:add_telegram_account' %}" class="btn btn-outline-primary">
+            ➕ Yangi Account
+        </a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card purple">
+            <div class="stat-icon">📱</div>
+            <div class="stat-value">{{ total_accounts }}</div>
+            <div class="stat-label">Telegram Accountlar</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card blue">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">{{ total_contacts }}</div>
+            <div class="stat-label">Kontaktlar</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card green">
+            <div class="stat-icon">💬</div>
+            <div class="stat-value">{{ total_chats }}</div>
+            <div class="stat-label">Chatlar</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card orange">
+            <div class="stat-icon">📩</div>
+            <div class="stat-value">{{ total_messages }}</div>
+            <div class="stat-label">Xabarlar</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<h5 class="fw-bold mb-3" style="font-size:1.1rem;">⚡ Tezkor amallar</h5>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <a href="{% url 'telegramai:import_contacts' %}" class="quick-action">
+            <div class="qa-icon" style="background:rgba(34,197,94,0.15);">📥</div>
+            <div>
+                <div class="qa-title">Kontaktlar Import</div>
+                <div class="qa-desc">Excel fayldan kontaktlarni yuklang</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'telegramai:chats_list' %}?refresh=1" class="quick-action">
+            <div class="qa-icon" style="background:rgba(59,130,246,0.15);">🔄</div>
+            <div>
+                <div class="qa-title">Chatlarni Yangilash</div>
+                <div class="qa-desc">Telegram chatlarini sinxronlash</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'telegramai:ai_dashboard' %}" class="quick-action">
+            <div class="qa-icon" style="background:rgba(168,85,247,0.15);">🤖</div>
+            <div>
+                <div class="qa-title">AI Sozlamalar</div>
+                <div class="qa-desc">AI assistantlarni boshqaring</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Accounts List -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0" style="font-size:1.1rem;">📱 Telegram Accountlar</h5>
+    <a href="{% url 'telegramai:telegram_accounts' %}" class="btn btn-outline-secondary btn-sm">Barchasini ko'rish →</a>
+</div>
+
+{% if telegram_accounts %}
+    {% for account in telegram_accounts %}
+    <div class="account-row">
+        <div class="account-avatar">📱</div>
+        <div class="flex-grow-1">
+            <div class="fw-semibold">{{ account.phone_number }}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">{{ account.session_name }}</div>
+        </div>
+        <span class="{% if account.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+            {% if account.is_active %}✓ Faol{% else %}⏸ Nofaol{% endif %}
+        </span>
+        <div class="d-flex gap-2">
+            <a href="{% url 'telegramai:contacts_list' %}?account={{ account.id }}" class="btn btn-outline-secondary btn-sm" title="Kontaktlar">👥</a>
+            <a href="{% url 'telegramai:chats_list' %}?account={{ account.id }}" class="btn btn-outline-secondary btn-sm" title="Chatlar">💬</a>
+            <a href="{% url 'telegramai:telegram_account_settings' account.id %}" class="btn btn-outline-secondary btn-sm" title="Sozlamalar">⚙️</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div style="text-align:center; padding:48px 20px; background:var(--bg-card); border-radius:16px; border:1px solid var(--border-color);">
+        <div style="font-size:3rem; margin-bottom:16px;">📱</div>
+        <h5 class="fw-bold mb-2">Hali account qo'shilmagan</h5>
+        <p class="text-secondary mb-3">Telegram accountingizni qo'shing va boshqarishni boshlang</p>
+        <a href="{% url 'telegramai:add_telegram_account' %}" class="btn btn-primary">➕ Account Qo'shish</a>
+    </div>
+{% endif %}
+{% endblock %}

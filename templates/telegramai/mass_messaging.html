@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% block title %}Mass Messaging{% endblock %}
+{% block page_title %}Mass Messaging{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mass-container { max-width: 800px; margin: 0 auto; }
+    .mass-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 18px;
+        padding: 28px;
+    }
+    .step-indicator {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 28px;
+    }
+    .step-dot {
+        width: 34px; height: 34px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700;
+        background: rgba(255,255,255,0.06); color: var(--text-secondary);
+        border: 2px solid var(--border-color);
+        transition: all 0.3s;
+    }
+    .step-dot.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .step-dot.done { background: var(--success); color: #fff; border-color: var(--success); }
+    .step-line { flex: 1; height: 2px; background: var(--border-color); }
+    .step-line.done { background: var(--success); }
+    .form-floating > label { color: var(--text-secondary); }
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        color: var(--text-primary); border-radius: 10px;
+    }
+    .form-floating > .form-control:focus,
+    .form-floating > .form-select:focus {
+        border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    .form-floating > .form-select option { background: var(--bg-primary); }
+    .msg-preview {
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; margin-top: 12px;
+    }
+    .msg-preview .bubble {
+        background: linear-gradient(135deg, var(--accent), var(--accent-light));
+        color: #fff; padding: 10px 14px; border-radius: 12px;
+        border-bottom-right-radius: 4px; display: inline-block;
+        max-width: 80%; font-size: 0.85rem; line-height: 1.5;
+    }
+    .target-type-btn {
+        padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border-color);
+        background: var(--bg-primary); color: var(--text-primary);
+        cursor: pointer; text-align: center; transition: all 0.2s;
+        flex: 1;
+    }
+    .target-type-btn:hover { border-color: rgba(99,102,241,0.3); }
+    .target-type-btn.selected {
+        border-color: var(--accent); background: rgba(99,102,241,0.08);
+    }
+    .target-type-btn input { display: none; }
+    .progress-bar-custom {
+        height: 6px; background: var(--border-color); border-radius: 10px;
+        overflow: hidden; margin-top: 12px;
+    }
+    .progress-bar-custom .fill {
+        height: 100%; background: linear-gradient(90deg, var(--accent), var(--success));
+        border-radius: 10px; transition: width 0.5s;
+    }
+    .result-card {
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        border-radius: 10px; padding: 14px 18px;
+        display: flex; align-items: center; gap: 12px;
+    }
+    .delay-input {
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        border-radius: 10px; padding: 10px 14px; color: var(--text-primary);
+        width: 80px; text-align: center;
+    }
+    .delay-input:focus { outline: none; border-color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mass-container">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:1.5rem;">📨 Mass Messaging</h2>
+            <p class="text-secondary mb-0" style="font-size:0.9rem;">Kontaktlarga ommaviy xabar yuborish</p>
+        </div>
+        <a href="{% url 'telegramai:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+    </div>
+
+    <div class="mass-card">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-dot active" id="stepDot1">1</div>
+            <div class="step-line" id="stepLine1"></div>
+            <div class="step-dot" id="stepDot2">2</div>
+            <div class="step-line" id="stepLine2"></div>
+            <div class="step-dot" id="stepDot3">3</div>
+        </div>
+
+        <form method="post" id="massForm">
+            {% csrf_token %}
+
+            <!-- Step 1: Account & Target -->
+            <div id="step1">
+                <h5 class="fw-bold mb-3" style="font-size:1rem;">📱 Account va maqsadni tanlang</h5>
+
+                <div class="form-floating mb-3">
+                    <select class="form-select" name="telegram_account" id="accountSelect" required>
+                        <option value="">Tanlang...</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}">{{ acc.phone_number }} {% if acc.session_name %}({{ acc.session_name }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    <label>📱 Telegram Account</label>
+                </div>
+
+                <label class="form-label fw-semibold mb-2" style="font-size:0.9rem;">🎯 Kimga yuborish?</label>
+                <div class="d-flex gap-2 mb-3">
+                    <label class="target-type-btn" onclick="selectTarget(this)">
+                        <input type="radio" name="target_type" value="contacts" checked>
+                        <div style="font-size:1.3rem; margin-bottom:4px;">👥</div>
+                        <div class="fw-semibold" style="font-size:0.85rem;">Kontaktlar</div>
+                    </label>
+                    <label class="target-type-btn" onclick="selectTarget(this)">
+                        <input type="radio" name="target_type" value="groups">
+                        <div style="font-size:1.3rem; margin-bottom:4px;">👨‍👩‍👧‍👦</div>
+                        <div class="fw-semibold" style="font-size:0.85rem;">Guruhlar</div>
+                    </label>
+                    <label class="target-type-btn" onclick="selectTarget(this)">
+                        <input type="radio" name="target_type" value="custom">
+                        <div style="font-size:1.3rem; margin-bottom:4px;">📋</div>
+                        <div class="fw-semibold" style="font-size:0.85rem;">Maxsus ro'yxat</div>
+                    </label>
+                </div>
+
+                <!-- Custom list textarea (hidden by default) -->
+                <div id="customListWrap" style="display:none;" class="mb-3">
+                    <textarea class="form-control" name="custom_list" rows="4"
+                              placeholder="Har bir qatorda bitta telefon raqam yoki username yozing..."
+                              style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px; font-size:0.85rem;">
+                    </textarea>
+                </div>
+
+                <button type="button" class="btn w-100 py-2 fw-bold mt-2" onclick="goStep(2)"
+                        style="background:linear-gradient(135deg, var(--accent), var(--accent-light)); border:none; color:#fff; border-radius:12px;">
+                    Keyingisi →
+                </button>
+            </div>
+
+            <!-- Step 2: Message -->
+            <div id="step2" style="display:none;">
+                <h5 class="fw-bold mb-3" style="font-size:1rem;">✍️ Xabar matnini yozing</h5>
+
+                <div class="mb-3">
+                    <textarea class="form-control" name="message" id="msgText" rows="6" required
+                              placeholder="Xabar matnini shu yerga yozing...&#10;&#10;{name} - kontakt ismi&#10;{phone} - telefon raqami"
+                              style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:12px; font-size:0.9rem;"
+                              oninput="updatePreview()"></textarea>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <label class="fw-semibold" style="font-size:0.85rem;">⏱️ Xabarlar orasidagi kutish:</label>
+                    <input type="number" class="delay-input" name="delay" value="5" min="1" max="60"> <span class="text-secondary" style="font-size:0.85rem;">soniya</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" style="font-size:0.85rem;">👁️ Ko'rinishi:</label>
+                    <div class="msg-preview">
+                        <div class="bubble" id="previewBubble">Xabar matni shu yerda ko'rinadi...</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary flex-fill py-2" onclick="goStep(1)">← Orqaga</button>
+                    <button type="button" class="btn flex-fill py-2 fw-bold" onclick="goStep(3)"
+                            style="background:linear-gradient(135deg, var(--accent), var(--accent-light)); border:none; color:#fff; border-radius:12px;">
+                        Keyingisi →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Confirm & Send -->
+            <div id="step3" style="display:none;">
+                <h5 class="fw-bold mb-3" style="font-size:1rem;">✅ Tasdiqlash va yuborish</h5>
+
+                <div class="d-grid gap-2 mb-4">
+                    <div class="result-card">
+                        <span style="font-size:1.2rem;">📱</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="font-size:0.85rem;">Account</div>
+                            <div style="font-size:0.78rem; color:var(--text-secondary);" id="summaryAccount">—</div>
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <span style="font-size:1.2rem;">🎯</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="font-size:0.85rem;">Maqsad</div>
+                            <div style="font-size:0.78rem; color:var(--text-secondary);" id="summaryTarget">—</div>
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <span style="font-size:1.2rem;">✉️</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="font-size:0.85rem;">Xabar</div>
+                            <div style="font-size:0.78rem; color:var(--text-secondary); white-space:pre-wrap; max-height:60px; overflow:hidden;" id="summaryMsg">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress (hidden until sending) -->
+                <div id="sendProgress" style="display:none;" class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold" style="font-size:0.85rem;">📨 Yuborilmoqda...</span>
+                        <span style="font-size:0.85rem; color:var(--text-secondary);" id="progressText">0/0</span>
+                    </div>
+                    <div class="progress-bar-custom">
+                        <div class="fill" id="progressFill" style="width:0%;"></div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:10px; padding:12px; margin-bottom:16px;">
+                    <div style="font-size:0.85rem; color:#fbbf24;">
+                        ⚠️ <strong>Diqqat:</strong> Telegram spamga qarshi cheklovlar qo'yishi mumkin. Katta hajmda yuborishda ehtiyot bo'ling.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2" id="sendButtons">
+                    <button type="button" class="btn btn-outline-secondary flex-fill py-2" onclick="goStep(2)">← Orqaga</button>
+                    <button type="submit" class="btn flex-fill py-2 fw-bold" id="sendBtn"
+                            style="background:linear-gradient(135deg, var(--success), #4ade80); border:none; color:#fff; border-radius:12px;">
+                        🚀 Yuborish
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function goStep(n) {
+    document.querySelectorAll('[id^="step"]').forEach(el => {
+        if (el.id.match(/^step\d$/)) el.style.display = 'none';
+    });
+    document.getElementById('step' + n).style.display = 'block';
+
+    for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById('stepDot' + i);
+        dot.classList.remove('active', 'done');
+        if (i < n) dot.classList.add('done');
+        else if (i === n) dot.classList.add('active');
+
+        if (i < 3) {
+            const line = document.getElementById('stepLine' + i);
+            line.classList.toggle('done', i < n);
+        }
+    }
+
+    if (n === 3) updateSummary();
+}
+
+function selectTarget(el) {
+    document.querySelectorAll('.target-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+    const val = el.querySelector('input').value;
+    document.getElementById('customListWrap').style.display = val === 'custom' ? 'block' : 'none';
+}
+document.querySelector('.target-type-btn').classList.add('selected');
+
+function updatePreview() {
+    const text = document.getElementById('msgText').value || 'Xabar matni shu yerda ko\'rinadi...';
+    document.getElementById('previewBubble').textContent = text.replace('{name}', 'Ali').replace('{phone}', '+998901234567');
+}
+
+function updateSummary() {
+    const accSelect = document.getElementById('accountSelect');
+    document.getElementById('summaryAccount').textContent = accSelect.options[accSelect.selectedIndex]?.text || '—';
+    const target = document.querySelector('input[name="target_type"]:checked');
+    const labels = { contacts: '👥 Kontaktlar', groups: '👨‍👩‍👧‍👦 Guruhlar', custom: '📋 Maxsus ro\'yxat' };
+    document.getElementById('summaryTarget').textContent = labels[target?.value] || '—';
+    document.getElementById('summaryMsg').textContent = document.getElementById('msgText').value || '—';
+}
+
+document.getElementById('massForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const sendBtn = document.getElementById('sendBtn');
+    const progressDiv = document.getElementById('sendProgress');
+    const buttonsDiv = document.getElementById('sendButtons');
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = '⏳ Yuborilmoqda...';
+    progressDiv.style.display = 'block';
+
+    try {
+        const formData = new FormData(form);
+        const res = await fetch(window.location.href, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressText').textContent = `${data.sent || '?'}/${data.total || '?'}`;
+            sendBtn.textContent = '✅ Yuborildi!';
+            sendBtn.style.background = 'var(--success)';
+        } else {
+            sendBtn.textContent = '❌ Xatolik';
+            sendBtn.style.background = 'var(--danger)';
+            alert(data.error || 'Xatolik yuz berdi');
+        }
+    } catch (err) {
+        sendBtn.textContent = '❌ Xatolik';
+        alert('Tarmoq xatoligi: ' + err.message);
+    }
+});
+</script>
+{% endblock %}

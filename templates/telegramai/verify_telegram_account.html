@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Telegram Account Tasdiqlash{% endblock %}
+{% block page_title %}Account Tasdiqlash{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verify-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 520px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .verify-icon {
+        width: 80px; height: 80px; border-radius: 22px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.5rem; margin: 0 auto 20px;
+    }
+    .verify-icon.phone { background: linear-gradient(135deg, #0088cc, #29b6f6); }
+    .verify-icon.code { background: linear-gradient(135deg, #f59e0b, #f97316); }
+    .verify-icon.password { background: linear-gradient(135deg, #ef4444, #f43f5e); }
+    .verify-icon.success { background: linear-gradient(135deg, #22c55e, #10b981); }
+    .code-input {
+        text-align: center; font-size: 1.8rem; font-weight: 700;
+        letter-spacing: 12px; padding: 16px;
+    }
+    .step-badges {
+        display: flex; gap: 8px; justify-content: center; margin-bottom: 24px;
+    }
+    .step-badge {
+        padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .step-badge.active { background: rgba(99,102,241,0.2); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+    .step-badge.done { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+    .step-badge.pending { background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .phone-display {
+        font-size: 1.2rem; font-weight: 700;
+        padding: 10px 20px; background: rgba(255,255,255,0.05);
+        border-radius: 10px; display: inline-block; margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-card">
+    {% if step == 'success' %}
+        <div class="verify-icon success">✅</div>
+        <h3 class="fw-bold mb-2">Muvaffaqiyatli!</h3>
+        <p class="text-secondary mb-4">Telegram account {{ telegram_account.phone_number }} tasdiqlandi</p>
+        <a href="{% url 'telegramai:telegram_accounts' %}" class="btn btn-primary">📱 Accountlarga qaytish</a>
+
+    {% elif step == 'code' %}
+        <div class="step-badges">
+            <span class="step-badge done">1. Telefon</span>
+            <span class="step-badge active">2. Kod</span>
+            <span class="step-badge pending">3. Tayyor</span>
+        </div>
+        <div class="verify-icon code">🔐</div>
+        <h3 class="fw-bold mb-2">Tasdiqlash kodi</h3>
+        <p class="text-secondary mb-3">{{ phone_number }} raqamiga yuborilgan kodni kiriting</p>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="verify_code">
+            <input type="hidden" name="phone_code_hash" value="{{ phone_code_hash }}">
+            <div class="mb-4">
+                <input type="text" name="verification_code" class="form-control code-input" placeholder="12345" maxlength="6" autofocus required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">✅ Tasdiqlash</button>
+        </form>
+
+    {% elif step == 'password' %}
+        <div class="step-badges">
+            <span class="step-badge done">1. Telefon</span>
+            <span class="step-badge done">2. Kod</span>
+            <span class="step-badge active">3. Parol</span>
+        </div>
+        <div class="verify-icon password">🔒</div>
+        <h3 class="fw-bold mb-2">2FA Parol</h3>
+        <p class="text-secondary mb-3">Ikki bosqichli tasdiqlash paroli kiritilishi kerak</p>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="password">
+            <div class="mb-4">
+                <input type="password" name="password" class="form-control" placeholder="Parolni kiriting" autofocus required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">🔓 Tasdiqlash</button>
+        </form>
+
+    {% else %}
+        <div class="step-badges">
+            <span class="step-badge active">1. Telefon</span>
+            <span class="step-badge pending">2. Kod</span>
+            <span class="step-badge pending">3. Tayyor</span>
+        </div>
+        <div class="verify-icon phone">📲</div>
+        <h3 class="fw-bold mb-2">Kodni Yuborish</h3>
+        <p class="text-secondary mb-2">Quyidagi raqamga tasdiqlash kodi yuboriladi:</p>
+        <div class="phone-display">{{ telegram_account.phone_number }}</div>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="send_code">
+            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">📨 Kod Yuborish</button>
+        </form>
+        {% if is_reactivation %}
+        <a href="{% url 'telegramai:telegram_accounts' %}" class="btn btn-outline-secondary w-100">← Ortga qaytish</a>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

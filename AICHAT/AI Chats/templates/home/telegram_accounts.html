@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}Telegram Accounts - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fab fa-telegram-plane me-2"></i>
+        Telegram Accounts
+    </h1>
+    <a href="{% url 'add_telegram_account' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>
+        Yangi Account Qo'shish
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if accounts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Telefon</th>
+                            <th>Session</th>
+                            <th>API ID</th>
+                            <th>Holat</th>
+                            <th>Yaratilgan</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                            <tr>
+                                <td>
+                                    <strong>{{ account.phone_number }}</strong>
+                                </td>
+                                <td>{{ account.session_name }}</td>
+                                <td>{{ account.api_id }}</td>
+                                <td>
+                                    {% if account.is_active %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>
+                                            Faol
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-pause me-1"></i>
+                                            Nofaol
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ account.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if account.is_active %}
+                                            <a href="{% url 'telegram_account_settings' account.id %}" 
+                                               class="btn btn-outline-primary" title="Sozlamalar">
+                                                <i class="fas fa-cog"></i>
+                                            </a>
+                                            <a href="{% url 'contacts_list' %}?account={{ account.id }}" 
+                                               class="btn btn-outline-primary" title="Kontaktlar">
+                                                <i class="fas fa-address-book"></i>
+                                            </a>
+                                            <a href="{% url 'chats_list' %}?account={{ account.id }}" 
+                                               class="btn btn-outline-success" title="Chatlar">
+                                                <i class="fas fa-comments"></i>
+                                            </a>
+                                            <button onclick="syncTelegramContacts({{ account.id }})" 
+                                                    class="btn btn-outline-info" title="Kontaktlarni sinxronlashtirish">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        {% else %}
+                                            <a href="{% url 'verify_telegram_account' %}?account_id={{ account.id }}&mode=verify" 
+                                               class="btn btn-warning btn-sm me-1" title="Haqiqiy tasdiqlash (Telegram kod)">
+                                                <i class="fas fa-mobile-alt me-1"></i>
+                                                Tasdiqlash
+                                            </a>
+                                            <button onclick="checkAccountStatus({{ account.id }})" 
+                                                    class="btn btn-info btn-sm me-1" title="Account holatini tekshirish">
+                                                <i class="fas fa-heartbeat"></i>
+                                            </button>
+                                            <a href="{% url 'verify_telegram_account' %}?account_id={{ account.id }}&mode=simple" 
+                                               class="btn btn-success btn-sm" title="Oddiy faollashtirish">
+                                                <i class="fas fa-toggle-on"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'admin:home_telegramaccount_change' account.id %}" 
+                                           class="btn btn-outline-secondary" title="Tahrirlash">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fab fa-telegram-plane fa-5x text-muted mb-4"></i>
+                <h4 class="text-muted">Hali Telegram account qo'shilmagan</h4>
+                <p class="text-muted mb-4">
+                    Telegram API bilan ishlash uchun birinchi account qo'shishingiz kerak.
+                    API ID va API Hash ni <a href="https://my.telegram.org" target="_blank">my.telegram.org</a> dan olishingiz mumkin.
+                </p>
+                <a href="{% url 'add_telegram_account' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>
+                    Birinchi Account Qo'shish
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if accounts %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Account Boshqarish
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <i class="fas fa-address-book me-2 text-primary"></i>
+                        <strong>Kontaktlar:</strong> Har bir account uchun alohida kontaktlar ro'yxati
+                    </div>
+                    <div class="list-group-item">
+                        <i class="fas fa-comments me-2 text-success"></i>
+                        <strong>Chatlar:</strong> Telegram chat larni ko'rish va xabar yuborish
+                    </div>
+                    <div class="list-group-item">
+                        <i class="fas fa-sync-alt me-2 text-info"></i>
+                        <strong>Sinxronlash:</strong> Telegram dan kontaktlarni avtomatik yuklash
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Xavfsizlik
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Muhim:</strong> API Hash va parollaringizni hech kim bilan bo'lishmang!
+                </div>
+                <p class="text-muted">
+                    Barcha session fayllari xavfsiz joyda saqlanadi. 
+                    Account o'chirilganda session ham o'chiriladi.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function syncTelegramContacts(accountId) {
+    if (!confirm('Telegram dan kontaktlarni sinxronlashtirmoqchimisiz?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/contacts/sync/${accountId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Muvaffaqiyat: ' + data.message);
+            location.reload();
+        } else {
+            alert('Xatolik: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+
+function checkAccountStatus(accountId) {
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/accounts/check-status/${accountId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Account holati: ${data.status}\n${data.message}\nUsername: ${data.username || 'N/A'}`);
+            if (data.status === 'active') {
+                location.reload(); // Reload to show updated status
+            }
+        } else {
+            alert(`Account holati: ${data.status}\n${data.message}`);
+            if (data.status === 'inactive') {
+                // Option to reactivate
+                if (confirm('Account nofaol. Qayta faollashtirishni xohlaysizmi?')) {
+                    window.location.href = `/accounts/verify/?account_id=${accountId}&mode=verify`;
+                }
+            }
+        }
+    })
+    .catch(error => {
+        alert('Status tekshirishda xatolik: ' + error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+</script>
+{% endblock %}

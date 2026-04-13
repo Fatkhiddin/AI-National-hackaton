@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from user.views import welcome_view
 
 urlpatterns = [
@@ -24,5 +26,9 @@ urlpatterns = [
     path('home/', include('home.urls')),
     path('operators/', include('operators_analys.urls')),
     path('market/', include('market_analys.urls')),
+    path('telegram/', include('telegramai.urls')),
     path('', welcome_view, name='welcome'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,2 +1,18 @@
 django
 requests
+# Telegram
+telethon
+# HTTP client
+httpx
+# Excel support
+xlrd
+openpyxl
+# AI providers
+openai
+# REST API
+djangorestframework
+drf-spectacular
+django-filter
+django-import-export
+# Async
+asgiref

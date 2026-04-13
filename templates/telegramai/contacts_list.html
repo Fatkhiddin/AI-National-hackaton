@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Kontaktlar{% endblock %}
+{% block page_title %}Kontaktlar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .contacts-table {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .contacts-table table {
+        margin: 0; color: var(--text-primary);
+    }
+    .contacts-table thead th {
+        background: rgba(255,255,255,0.03);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.75rem; text-transform: uppercase;
+        letter-spacing: 0.5px; font-weight: 700;
+        color: var(--text-secondary); padding: 14px 16px;
+    }
+    .contacts-table tbody td {
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        padding: 12px 16px; vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    .contacts-table tbody tr:hover { background: var(--bg-card-hover); }
+    .contacts-table tbody tr:last-child td { border-bottom: none; }
+    .contact-name { font-weight: 600; }
+    .contact-phone { color: var(--accent-light); font-weight: 500; }
+    .contact-username { color: var(--text-secondary); font-size: 0.85rem; }
+    .badge-sm {
+        padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600;
+    }
+    .badge-yes { background: rgba(34,197,94,0.15); color: #86efac; }
+    .badge-no { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .badge-premium { background: rgba(168,85,247,0.15); color: #d8b4fe; }
+    .pagination-wrapper {
+        display: flex; justify-content: center; padding: 20px;
+    }
+    .pagination-wrapper .page-link {
+        background: var(--bg-card); border-color: var(--border-color);
+        color: var(--text-primary); border-radius: 8px; margin: 0 3px;
+    }
+    .pagination-wrapper .page-link:hover { background: var(--bg-card-hover); }
+    .pagination-wrapper .page-item.active .page-link {
+        background: var(--accent); border-color: var(--accent);
+    }
+    .counter-badge {
+        background: rgba(99,102,241,0.15); color: var(--accent-light);
+        padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <h2 class="fw-bold mb-0" style="font-size:1.5rem;">👥 Kontaktlar</h2>
+        <span class="counter-badge">{{ page_obj.paginator.count }} ta</span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'telegramai:import_contacts' %}" class="btn btn-primary">📥 Import</a>
+        <a href="{% url 'telegramai:export_contacts' %}{% if current_account %}?account={{ current_account }}{% endif %}" class="btn btn-outline-success">📤 Export</a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<form method="GET" class="filter-bar">
+    <div class="flex-grow-1" style="min-width:200px;">
+        <input type="text" name="search" class="form-control" placeholder="🔍 Qidirish (ism, telefon, username)..." value="{{ search }}">
+    </div>
+    <select name="account" class="form-select" style="max-width:220px;">
+        <option value="">Barcha accountlar</option>
+        {% for acc in telegram_accounts %}
+            <option value="{{ acc.id }}" {% if current_account == acc.id|stringformat:"d" %}selected{% endif %}>{{ acc.phone_number }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Filtrlash</button>
+</form>
+
+<!-- Contacts Table -->
+{% if page_obj %}
+<div class="contacts-table">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ism</th>
+                    <th>Telefon</th>
+                    <th>Username</th>
+                    <th>Account</th>
+                    <th>Telegram</th>
+                    <th>Qo'shilgan</th>
+                    <th>Premium</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                    <td>
+                        <span class="contact-name">{{ contact.first_name }} {{ contact.last_name }}</span>
+                        {% if contact.name %}<br><small class="text-secondary">{{ contact.name }}</small>{% endif %}
+                    </td>
+                    <td><span class="contact-phone">{{ contact.phone_number }}</span></td>
+                    <td>
+                        {% if contact.username %}
+                            <span class="contact-username">@{{ contact.username }}</span>
+                        {% else %}
+                            <span class="text-secondary">—</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ contact.telegram_account.phone_number|default:"—" }}</small></td>
+                    <td><span class="badge-sm {% if contact.telegram_exists %}badge-yes{% else %}badge-no{% endif %}">{% if contact.telegram_exists %}Ha{% else %}Yo'q{% endif %}</span></td>
+                    <td><span class="badge-sm {% if contact.added_to_telegram %}badge-yes{% else %}badge-no{% endif %}">{% if contact.added_to_telegram %}Ha{% else %}Yo'q{% endif %}</span></td>
+                    <td>{% if contact.is_premium %}<span class="badge-sm badge-premium">⭐ Premium</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-wrapper">
+    <nav>
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}">←</a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}">→</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<div style="text-align:center; padding:48px; background:var(--bg-card); border-radius:16px; border:1px solid var(--border-color);">
+    <div style="font-size:3rem; margin-bottom:16px;">👥</div>
+    <h5 class="fw-bold mb-2">Kontaktlar topilmadi</h5>
+    <p class="text-secondary mb-3">Excel fayldan kontaktlarni import qiling</p>
+    <a href="{% url 'telegramai:import_contacts' %}" class="btn btn-primary">📥 Import qilish</a>
+</div>
+{% endif %}
+{% endblock %}

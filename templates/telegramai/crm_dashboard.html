@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% block title %}CRM Dashboard{% endblock %}
+{% block page_title %}CRM Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .crm-stat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .crm-stat {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .crm-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .crm-stat-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .crm-stat-value { font-size: 1.5rem; font-weight: 800; }
+    .crm-stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+    .crm-provider-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s;
+    }
+    .crm-provider-card:hover { border-color: rgba(99,102,241,0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .crm-provider-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .crm-provider-logo {
+        width: 52px; height: 52px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; background: rgba(99,102,241,0.12);
+    }
+    .crm-search-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+    }
+    .search-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .search-item:last-child { border-bottom: none; }
+    .search-icon {
+        width: 36px; height: 36px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; background: rgba(245,158,11,0.12); flex-shrink: 0;
+    }
+    .connect-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-light));
+        border: none; color: #fff; padding: 8px 20px; border-radius: 10px;
+        font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+    }
+    .connect-btn:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+    .status-badge {
+        padding: 4px 12px; border-radius: 16px; font-size: 0.7rem; font-weight: 600;
+    }
+    .status-badge.connected { background: rgba(34,197,94,0.12); color: #86efac; }
+    .status-badge.disconnected { background: rgba(239,68,68,0.12); color: #fca5a5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.5rem;">🏢 CRM Dashboard</h2>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">CRM integrationlarini boshqaring va monitoring qiling</p>
+    </div>
+    <button class="btn connect-btn" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+        ➕ CRM qo'shish
+    </button>
+</div>
+
+<!-- Stats -->
+<div class="crm-stat-row">
+    <div class="crm-stat">
+        <div class="crm-stat-icon">🔗</div>
+        <div class="crm-stat-value">{{ crm_providers|length|default:"0" }}</div>
+        <div class="crm-stat-label">CRM Providerlar</div>
+    </div>
+    <div class="crm-stat">
+        <div class="crm-stat-icon">🔍</div>
+        <div class="crm-stat-value">{{ recent_searches|length|default:"0" }}</div>
+        <div class="crm-stat-label">So'nggi qidiruvlar</div>
+    </div>
+    <div class="crm-stat">
+        <div class="crm-stat-icon">📊</div>
+        <div class="crm-stat-value">—</div>
+        <div class="crm-stat-label">Sinxronlangan</div>
+    </div>
+    <div class="crm-stat">
+        <div class="crm-stat-icon">✅</div>
+        <div class="crm-stat-value">—</div>
+        <div class="crm-stat-label">Muvaffaqiyatli</div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- CRM Providers -->
+    <div class="col-lg-7">
+        <h5 class="fw-bold mb-3" style="font-size:1rem;">🔌 CRM Providerlar</h5>
+        {% if crm_providers %}
+            <div class="d-grid gap-3">
+            {% for provider in crm_providers %}
+                <div class="crm-provider-card">
+                    <div class="crm-provider-header">
+                        <div class="crm-provider-logo">🏢</div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold" style="font-size:1rem;">{{ provider.name }}</div>
+                            <div style="font-size:0.8rem; color:var(--text-secondary);">{{ provider.get_crm_type_display }} · {{ provider.api_url|default:"URL belgilanmagan" }}</div>
+                        </div>
+                        <span class="status-badge {% if provider.is_active %}connected{% else %}disconnected{% endif %}">
+                            {% if provider.is_active %}🟢 Ulangan{% else %}🔴 Uzilgan{% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="testConnection({{ provider.id }})">🔄 Test</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="syncData({{ provider.id }})">�️ O'chirish</button>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+        <div style="text-align:center; padding:40px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px;">
+            <div style="font-size:3rem; margin-bottom:12px;">🏢</div>
+            <p class="text-secondary mb-3" style="font-size:0.9rem;">Hali CRM ulanmagan</p>
+            <button class="btn connect-btn" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                ➕ CRM ulash
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Searches -->
+    <div class="col-lg-5">
+        <h5 class="fw-bold mb-3" style="font-size:1rem;">🔍 So'nggi qidiruvlar</h5>
+        <div class="crm-search-card">
+            {% if recent_searches %}
+                {% for search in recent_searches %}
+                <div class="search-item">
+                    <div class="search-icon">🔍</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" style="font-size:0.85rem;">{{ search.username|default:"Noma'lum" }} · Chat #{{ search.chat_id }}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">{{ search.created_at|timesince }} oldin</div>
+                    </div>
+                    {% if search.results_count %}
+                    <span style="font-size:0.75rem; color:var(--accent-light);">{{ search.results_count }} natija</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div style="text-align:center; padding:20px; color:var(--text-secondary);">
+                <div style="font-size:2rem; margin-bottom:8px;">📭</div>
+                <p class="mb-0" style="font-size:0.85rem;">Hali qidiruv amalga oshirilmagan</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Provider Modal -->
+<div class="modal fade" id="addProviderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:18px;">
+            <div class="modal-header" style="border-bottom:1px solid var(--border-color); padding:20px 24px;">
+                <h5 class="modal-title fw-bold">🏢 CRM Provider qo'shish</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addProviderForm">
+                {% csrf_token %}
+                <div class="modal-body" style="padding:24px;">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" name="name" id="providerName" placeholder="CRM nomi" required
+                               style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px;">
+                        <label for="providerName">📛 CRM nomi</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-select" name="crm_type" id="providerType" required
+                                style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px; height:58px;">
+                            <option value="custom_api">Custom API</option>
+                            <option value="amocrm">AmoCRM</option>
+                            <option value="bitrix24">Bitrix24</option>
+                            <option value="hubspot">HubSpot</option>
+                            <option value="salesforce">Salesforce</option>
+                            <option value="zoho">Zoho CRM</option>
+                            <option value="pipedrive">Pipedrive</option>
+                            <option value="simple_json">Simple JSON File</option>
+                        </select>
+                        <label for="providerType">📂 CRM turi</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="url" class="form-control" name="api_url" id="providerUrl" placeholder="API URL"
+                               style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px;">
+                        <label for="providerUrl">🌐 API URL</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" name="api_key" id="providerKey" placeholder="API Key"
+                               style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px;">
+                        <label for="providerKey">🔑 API Key</label>
+                    </div>
+                    <div class="form-floating">
+                        <input type="text" class="form-control" name="api_secret" id="providerSecret" placeholder="API Secret"
+                               style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px;">
+                        <label for="providerSecret">🔐 API Secret (ixtiyoriy)</label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--border-color); padding:16px 24px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn connect-btn">💾 Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function testConnection(id) {
+    try {
+        const res = await fetch(`/telegram/crm/providers/${id}/test/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await res.json();
+        alert(data.success ? '✅ Ulanish muvaffaqiyatli!' : '❌ Xatolik: ' + (data.error || 'Ulanib bo\'lmadi'));
+    } catch (err) {
+        alert('❌ Tarmoq xatoligi');
+    }
+}
+
+async function syncData(id) {
+    if (!confirm('Bu CRM providerni o\'chirishni xohlaysizmi?')) return;
+    try {
+        const res = await fetch(`/telegram/crm/providers/${id}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('❌ Xatolik: ' + (data.error || 'O\'chirib bo\'lmadi'));
+        }
+    } catch (err) {
+        alert('❌ Tarmoq xatoligi');
+    }
+}
+
+document.getElementById('addProviderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type="submit"]');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Saqlanmoqda...';
+
+    try {
+        const payload = {
+            name: document.getElementById('providerName').value,
+            crm_type: document.getElementById('providerType').value,
+            api_url: document.getElementById('providerUrl').value,
+            api_key: document.getElementById('providerKey').value,
+            api_secret: document.getElementById('providerSecret').value,
+        };
+        const res = await fetch('{% url "telegramai:crm_provider_create" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('❌ Xatolik: ' + (data.error || 'Saqlab bo\'lmadi'));
+            btn.disabled = false;
+            btn.innerHTML = origText;
+        }
+    } catch (err) {
+        alert('❌ Tarmoq xatoligi: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+});
+</script>
+{% endblock %}

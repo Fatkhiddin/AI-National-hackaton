@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% block title %}AI Provider Setup{% endblock %}
+{% block page_title %}AI Provider Setup{% endblock %}
+
+{% block extra_css %}
+<style>
+    .setup-container { max-width: 680px; margin: 0 auto; }
+    .setup-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 18px;
+        padding: 32px;
+    }
+    .provider-header {
+        display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+        padding-bottom: 24px; border-bottom: 1px solid var(--border-color);
+    }
+    .provider-logo {
+        width: 64px; height: 64px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem;
+    }
+    .provider-logo.openai { background: rgba(16,163,127,0.15); }
+    .provider-logo.claude { background: rgba(147,51,234,0.15); }
+    .provider-logo.gemini { background: rgba(234,67,53,0.15); }
+    .form-floating > label { color: var(--text-secondary); }
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: 10px;
+        height: 58px;
+    }
+    .form-floating > .form-control:focus,
+    .form-floating > .form-select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    .form-floating > .form-select option { background: var(--bg-primary); }
+    .model-list {
+        display: grid; gap: 8px; margin-top: 8px;
+    }
+    .model-option {
+        padding: 10px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .model-option:hover { border-color: rgba(99,102,241,0.4); }
+    .model-option.selected { border-color: var(--accent); background: rgba(99,102,241,0.08); }
+    .model-option input { display: none; }
+    .model-dot {
+        width: 18px; height: 18px; border-radius: 50%;
+        border: 2px solid var(--border-color);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .model-option.selected .model-dot {
+        border-color: var(--accent);
+    }
+    .model-option.selected .model-dot::after {
+        content: ''; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--accent);
+    }
+    .info-box {
+        background: rgba(99,102,241,0.06);
+        border: 1px solid rgba(99,102,241,0.15);
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <a href="{% url 'telegramai:ai_integration' %}" class="btn btn-sm btn-outline-secondary mb-3">← Orqaga</a>
+    <div class="setup-card">
+        <div class="provider-header">
+            <div class="provider-logo {{ provider }}">
+                {% if provider == 'openai' %}🟢{% elif provider == 'claude' %}🟣{% else %}🔴{% endif %}
+            </div>
+            <div>
+                <h4 class="fw-bold mb-1">
+                    {% if provider == 'openai' %}OpenAI{% elif provider == 'claude' %}Claude{% elif provider == 'gemini' %}Gemini{% else %}{{ provider|upper }}{% endif %}
+                </h4>
+                <p class="text-secondary mb-0" style="font-size:0.85rem;">
+                    {% if provider_info %}{{ provider_info.description|default:"AI Provider sozlamalari" }}{% else %}AI Provider sozlamalari{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <form method="post" id="setupForm">
+            {% csrf_token %}
+            <!-- API Key -->
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" name="api_key" id="api_key"
+                       placeholder="API Key" required
+                       value="{{ existing_integration.api_key|default:'' }}">
+                <label for="api_key">🔑 API Key</label>
+            </div>
+
+            <!-- Model Selection -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.9rem;">🎯 Model tanlang</label>
+                <div class="model-list" id="modelList">
+                    {% if provider == 'openai' %}
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="gpt-3.5-turbo">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">GPT-3.5 Turbo</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Tez va arzon</div>
+                            </div>
+                        </label>
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="gpt-4">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">GPT-4</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Eng aqlli, lekin sekinroq</div>
+                            </div>
+                        </label>
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="gpt-4-turbo">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">GPT-4 Turbo</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Eng yangi va tez</div>
+                            </div>
+                        </label>
+                    {% elif provider == 'claude' %}
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="claude-3-haiku-20240307">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">Claude 3 Haiku</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Eng tez va arzon</div>
+                            </div>
+                        </label>
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="claude-3-sonnet-20240229">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">Claude 3 Sonnet</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Balans: tezlik + sifat</div>
+                            </div>
+                        </label>
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="claude-3-opus-20240229">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">Claude 3 Opus</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Eng aqlli</div>
+                            </div>
+                        </label>
+                    {% elif provider == 'gemini' %}
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="gemini-pro">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">Gemini Pro</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Umumiy maqsadlar uchun</div>
+                            </div>
+                        </label>
+                        <label class="model-option" onclick="selectModel(this)">
+                            <input type="radio" name="model_name" value="gemini-1.5-pro">
+                            <span class="model-dot"></span>
+                            <div>
+                                <div class="fw-semibold" style="font-size:0.9rem;">Gemini 1.5 Pro</div>
+                                <div style="font-size:0.75rem; color:var(--text-secondary);">Katta kontekst oynasi</div>
+                            </div>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Telegram Account -->
+            <div class="form-floating mb-3">
+                <select class="form-select" name="telegram_account" id="telegram_account" required>
+                    <option value="">Tanlang...</option>
+                    {% for acc in telegram_accounts %}
+                    <option value="{{ acc.id }}" {% if existing_integration and existing_integration.telegram_account_id == acc.id %}selected{% endif %}>
+                        {{ acc.phone_number }} {% if acc.session_name %}({{ acc.session_name }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="telegram_account">📱 Telegram Account</label>
+            </div>
+
+            <!-- System Prompt -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.9rem;">📝 System Prompt (ixtiyoriy)</label>
+                <textarea class="form-control" name="system_prompt" rows="4" placeholder="AI uchun yo'riqnoma..."
+                    style="background:var(--bg-primary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px;"
+                >{{ existing_integration.system_prompt|default:'' }}</textarea>
+            </div>
+
+            <!-- Info Box -->
+            <div class="info-box mb-4">
+                <strong>💡 Eslatma:</strong> API key ni provider rasmiy saytidan oling.
+                {% if provider == 'openai' %}<a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--accent);">platform.openai.com</a>
+                {% elif provider == 'claude' %}<a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent);">console.anthropic.com</a>
+                {% elif provider == 'gemini' %}<a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com</a>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn w-100 py-3 fw-bold" style="background:linear-gradient(135deg, var(--accent), var(--accent-light)); border:none; border-radius:12px; font-size:1rem;">
+                💾 {% if existing_integration %}Yangilash{% else %}Saqlash{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectModel(el) {
+    document.querySelectorAll('.model-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+}
+// Pre-select existing model
+{% if existing_integration %}
+document.querySelectorAll('.model-option input').forEach(inp => {
+    if (inp.value === '{{ existing_integration.model_name }}') {
+        inp.closest('.model-option').classList.add('selected');
+        inp.checked = true;
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

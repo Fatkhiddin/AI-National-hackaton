@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Kontakt Import - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-file-import me-2"></i>
+                    Excel dan Kontakt Import Qilish
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if telegram_accounts %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Ma'lumot:</strong> Excel faylida "name" va "number" ustunlari bo'lishi kerak.
+                        Birinchi qator ustun nomlarini o'z ichiga oladi.
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="telegram_account" class="form-label">
+                                <i class="fab fa-telegram-plane me-1"></i>
+                                Telegram Account <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="telegram_account" name="telegram_account" required>
+                                <option value="">Account tanlang...</option>
+                                {% for account in telegram_accounts %}
+                                    <option value="{{ account.id }}">
+                                        {{ account.phone_number }} - {{ account.session_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Kontaktlar ushbu account ga bog'lanadi
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="excel_file" class="form-label">
+                                <i class="fas fa-file-excel me-1"></i>
+                                Excel Fayl <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="excel_file" 
+                                   name="excel_file" 
+                                   accept=".xls,.xlsx"
+                                   required>
+                            <div class="form-text">
+                                .xls yoki .xlsx formatidagi fayllar qabul qilinadi
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'contacts_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Orqaga
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-file-import me-1"></i>
+                                Import Qilish
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fab fa-telegram-plane fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Avval Telegram Account Qo'shing</h5>
+                        <p class="text-muted">
+                            Kontakt import qilish uchun avval kam bo'lgan bitta faol Telegram account bo'lishi kerak.
+                        </p>
+                        <a href="{% url 'add_telegram_account' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Telegram Account Qo'shish
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Example Format Card -->
+        {% if telegram_accounts %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Excel Fayl Formati
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Excel faylingiz quyidagi formatda bo'lishi kerak:</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>A ustun (name)</th>
+                                <th>B ustun (number)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>name</td>
+                                <td>number</td>
+                            </tr>
+                            <tr>
+                                <td>Ahmad Karimov</td>
+                                <td>998901234567</td>
+                            </tr>
+                            <tr>
+                                <td>Olim Saidov</td>
+                                <td>998907654321</td>
+                            </tr>
+                            <tr>
+                                <td>Nargiza Yusupova</td>
+                                <td>998909876543</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Eslatma:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Birinchi qator ustun nomlari bo'lishi kerak</li>
+                        <li>Telefon raqamlar + belgisisiz kiritilishi mumkin</li>
+                        <li>Bo'sh qatorlar e'tiborga olinmaydi</li>
+                        <li>Mavjud kontaktlar yangilanadi</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

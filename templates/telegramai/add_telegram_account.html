@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Yangi Telegram Account{% endblock %}
+{% block page_title %}Yangi Account Qo'shish{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    .form-card .form-header {
+        text-align: center; margin-bottom: 32px;
+    }
+    .form-card .form-header .icon {
+        width: 72px; height: 72px; border-radius: 20px;
+        background: linear-gradient(135deg, #0088cc, #29b6f6);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; margin: 0 auto 16px;
+    }
+    .step-indicator {
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px; margin-bottom: 24px;
+    }
+    .step-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+    }
+    .step-dot.active { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+    .step-dot.done { background: var(--success); }
+    .help-box {
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 24px;
+        font-size: 0.85rem;
+    }
+    .help-box .help-title { font-weight: 700; margin-bottom: 8px; color: var(--accent-light); }
+    .help-box ol { padding-left: 20px; margin: 0; }
+    .help-box ol li { margin-bottom: 6px; color: var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div class="form-header">
+        <div class="icon">📱</div>
+        <h3 class="fw-bold mb-1">Yangi Telegram Account</h3>
+        <p class="text-secondary mb-0">Telegram API ma'lumotlarini kiriting</p>
+    </div>
+
+    <div class="step-indicator">
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">API ID</label>
+            <input type="text" name="api_id" class="form-control" placeholder="12345678" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">API Hash</label>
+            <input type="text" name="api_hash" class="form-control" placeholder="abcdef1234567890abcdef1234567890" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Telefon raqam</label>
+            <input type="text" name="phone_number" class="form-control" placeholder="+998901234567" required>
+        </div>
+        <div class="mb-4">
+            <label class="form-label">Session nomi</label>
+            <input type="text" name="session_name" class="form-control" placeholder="my_account" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2">📲 Account Yaratish</button>
+    </form>
+
+    <div class="help-box">
+        <div class="help-title">🔑 API ma'lumotlarini qanday olish mumkin?</div>
+        <ol>
+            <li><a href="https://my.telegram.org" target="_blank" style="color:var(--accent-light);">my.telegram.org</a> saytiga kiring</li>
+            <li>"API development tools" bo'limiga o'ting</li>
+            <li>Yangi app yarating (yoki mavjudini oching)</li>
+            <li><strong>API ID</strong> va <strong>API Hash</strong> ni ko'chirib oling</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}Telegram Accountlar{% endblock %}
+{% block page_title %}Telegram Accountlar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .account-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .account-card:hover {
+        border-color: rgba(99,102,241,0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+    }
+    .account-card.active { border-left: 3px solid var(--success); }
+    .account-card.inactive { border-left: 3px solid var(--warning); }
+    .account-header {
+        display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    }
+    .account-icon {
+        width: 52px; height: 52px; border-radius: 14px;
+        background: linear-gradient(135deg, #0088cc, #29b6f6);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; color: white; flex-shrink: 0;
+    }
+    .account-phone { font-size: 1.1rem; font-weight: 700; }
+    .account-session { font-size: 0.8rem; color: var(--text-secondary); }
+    .account-meta {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        margin-bottom: 16px;
+    }
+    .meta-item {
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px; padding: 10px 14px;
+    }
+    .meta-label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .meta-value { font-size: 0.9rem; font-weight: 600; margin-top: 2px; }
+    .account-actions {
+        display: flex; gap: 8px; flex-wrap: wrap;
+        padding-top: 16px; border-top: 1px solid var(--border-color);
+    }
+    .badge-status {
+        padding: 5px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-status.active { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+    .badge-status.inactive { background: rgba(245,158,11,0.15); color: #fde68a; border: 1px solid rgba(245,158,11,0.2); }
+    .status-dot {
+        width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+    }
+    .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.offline { background: var(--warning); }
+    .btn-action {
+        padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+        border: 1px solid var(--border-color); background: transparent;
+        color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-action:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+    .btn-action.primary { border-color: rgba(99,102,241,0.3); color: var(--accent-light); }
+    .btn-action.primary:hover { background: rgba(99,102,241,0.15); }
+    .btn-action.success { border-color: rgba(34,197,94,0.3); color: #86efac; }
+    .btn-action.success:hover { background: rgba(34,197,94,0.15); }
+    .btn-action.warning { border-color: rgba(245,158,11,0.3); color: #fde68a; }
+    .btn-action.warning:hover { background: rgba(245,158,11,0.15); }
+    .btn-action.danger { border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+    .btn-action.danger:hover { background: rgba(239,68,68,0.15); }
+
+    .empty-state {
+        text-align: center; padding: 64px 20px;
+        background: var(--bg-card); border-radius: 16px;
+        border: 1px dashed var(--border-color);
+    }
+    .loading-spinner {
+        display: inline-block; width: 16px; height: 16px;
+        border: 2px solid rgba(255,255,255,0.2);
+        border-top-color: var(--accent-light);
+        border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.5rem;">📱 Telegram Accountlar</h2>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">Barcha Telegram accountlaringizni boshqaring</p>
+    </div>
+    <a href="{% url 'telegramai:add_telegram_account' %}" class="btn btn-primary">➕ Yangi Account</a>
+</div>
+
+{% if accounts %}
+<div class="row g-3">
+    {% for account in accounts %}
+    <div class="col-md-6 col-xl-4">
+        <div class="account-card {% if account.is_active %}active{% else %}inactive{% endif %}">
+            <div class="account-header">
+                <div class="account-icon">📱</div>
+                <div class="flex-grow-1">
+                    <div class="account-phone">{{ account.phone_number }}</div>
+                    <div class="account-session">{{ account.session_name }}</div>
+                </div>
+                <span class="badge-status {% if account.is_active %}active{% else %}inactive{% endif %}">
+                    <span class="status-dot {% if account.is_active %}online{% else %}offline{% endif %}"></span>
+                    {% if account.is_active %}Faol{% else %}Nofaol{% endif %}
+                </span>
+            </div>
+
+            <div class="account-meta">
+                <div class="meta-item">
+                    <div class="meta-label">API ID</div>
+                    <div class="meta-value">{{ account.api_id }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Yaratilgan</div>
+                    <div class="meta-value">{{ account.created_at|date:"d.m.Y" }}</div>
+                </div>
+            </div>
+
+            <div class="account-actions">
+                {% if account.is_active %}
+                    <a href="{% url 'telegramai:telegram_account_settings' account.id %}" class="btn-action primary">⚙️ Sozlamalar</a>
+                    <a href="{% url 'telegramai:contacts_list' %}?account={{ account.id }}" class="btn-action">👥 Kontaktlar</a>
+                    <a href="{% url 'telegramai:chats_list' %}?account={{ account.id }}" class="btn-action success">💬 Chatlar</a>
+                    <button onclick="syncContacts({{ account.id }}, this)" class="btn-action">🔄 Sync</button>
+                    <button onclick="checkStatus({{ account.id }}, this)" class="btn-action">🔍 Status</button>
+                {% else %}
+                    <a href="{% url 'telegramai:verify_telegram_account' %}?account_id={{ account.id }}&mode=verify" class="btn-action warning">📲 Tasdiqlash</a>
+                    <a href="{% url 'telegramai:verify_telegram_account' %}?account_id={{ account.id }}&mode=simple" class="btn-action success">⚡ Faollashtirish</a>
+                    <button onclick="checkStatus({{ account.id }}, this)" class="btn-action">🔍 Status</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div style="font-size:4rem; margin-bottom:20px;">📱</div>
+    <h4 class="fw-bold mb-2">Hali account qo'shilmagan</h4>
+    <p class="text-secondary mb-4">Telegram accountingizni qo'shing va avtomatlashtirish imkoniyatlaridan foydalaning</p>
+    <a href="{% url 'telegramai:add_telegram_account' %}" class="btn btn-primary btn-lg">➕ Birinchi Accountni Qo'shish</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function syncContacts(accountId, btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="loading-spinner"></span> Yuklanmoqda...';
+    btn.disabled = true;
+    fetch(`{% url 'telegramai:dashboard' %}../contacts/sync/${accountId}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        if (data.success) {
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message || 'Xatolik yuz berdi', 'error');
+        }
+    })
+    .catch(() => { btn.innerHTML = orig; btn.disabled = false; showToast('Xatolik yuz berdi', 'error'); });
+}
+
+function checkStatus(accountId, btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="loading-spinner"></span>';
+    btn.disabled = true;
+    fetch(`{% url 'telegramai:dashboard' %}../accounts/check-status/${accountId}/`)
+    .then(r => r.json())
+    .then(data => {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        if (data.success) {
+            showToast(`✅ Account faol: ${data.username || ''}`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(`⚠️ ${data.message}`, 'warning');
+        }
+    })
+    .catch(() => { btn.innerHTML = orig; btn.disabled = false; });
+}
+
+function showToast(msg, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+    toast.style.cssText = 'top:80px;right:20px;z-index:9999;min-width:300px;animation:fadeIn 0.3s';
+    toast.innerHTML = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

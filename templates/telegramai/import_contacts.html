@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Kontakt Import{% endblock %}
+{% block page_title %}Kontaktlarni Import Qilish{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .upload-zone {
+        border: 2px dashed rgba(99,102,241,0.3);
+        border-radius: 14px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 20px;
+        position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+        border-color: var(--accent);
+        background: rgba(99,102,241,0.05);
+    }
+    .upload-zone input[type="file"] {
+        position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .upload-zone .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone .upload-text { font-weight: 600; margin-bottom: 4px; }
+    .upload-zone .upload-hint { font-size: 0.8rem; color: var(--text-secondary); }
+    .file-selected {
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.2);
+        border-radius: 10px;
+        padding: 10px 16px;
+        display: none;
+        align-items: center; gap: 10px;
+        margin-bottom: 20px;
+    }
+    .file-selected.show { display: flex; }
+    .format-info {
+        background: rgba(59,130,246,0.1);
+        border: 1px solid rgba(59,130,246,0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 24px;
+    }
+    .format-info h6 { font-weight: 700; color: #93c5fd; margin-bottom: 10px; }
+    .format-info table {
+        width: 100%; font-size: 0.8rem;
+    }
+    .format-info td {
+        padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .format-info td:first-child { font-weight: 600; color: var(--accent-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-card">
+    <div style="text-align:center; margin-bottom:28px;">
+        <div style="font-size:2.5rem; margin-bottom:12px;">📥</div>
+        <h3 class="fw-bold mb-1">Kontaktlarni Import Qilish</h3>
+        <p class="text-secondary mb-0">Excel fayldan kontaktlarni yuklang</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="importForm">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Telegram Account</label>
+            <select name="telegram_account" class="form-select" required>
+                <option value="">Account tanlang...</option>
+                {% for acc in telegram_accounts %}
+                    <option value="{{ acc.id }}">{{ acc.phone_number }} ({{ acc.session_name }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" name="excel_file" id="excelFile" accept=".xlsx,.xls" required>
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Excel faylni tanlang yoki bu yerga tashlang</div>
+            <div class="upload-hint">.xlsx yoki .xls formatda</div>
+        </div>
+
+        <div class="file-selected" id="fileInfo">
+            <span>📎</span>
+            <span id="fileName" class="flex-grow-1 fw-semibold"></span>
+            <span id="fileSize" class="text-secondary" style="font-size:0.8rem;"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2" id="submitBtn">
+            📥 Import Qilish
+        </button>
+    </form>
+
+    <div class="format-info">
+        <h6>📋 Excel fayl formati</h6>
+        <table>
+            <tr><td>A ustun</td><td>Ism (First Name)</td></tr>
+            <tr><td>B ustun</td><td>Familiya (Last Name)</td></tr>
+            <tr><td>C ustun</td><td>Telefon raqam (+998...)</td></tr>
+            <tr><td>D ustun</td><td>To'liq ism (optional)</td></tr>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const fileInput = document.getElementById('excelFile');
+const uploadZone = document.getElementById('uploadZone');
+const fileInfo = document.getElementById('fileInfo');
+
+fileInput.addEventListener('change', function() {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+        fileInfo.classList.add('show');
+    }
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); });
+
+document.getElementById('importForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<span class="loading-spinner"></span> Import qilinmoqda...';
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

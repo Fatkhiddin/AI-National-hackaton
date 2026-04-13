@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Chatlar{% endblock %}
+{% block page_title %}Chatlar{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-controls {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    .chat-grid { display: flex; flex-direction: column; gap: 6px; }
+    .chat-item {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex; align-items: center; gap: 16px;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+    .chat-item:hover {
+        background: var(--bg-card-hover);
+        border-color: rgba(99,102,241,0.2);
+        color: var(--text-primary);
+    }
+    .chat-avatar {
+        width: 48px; height: 48px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white; font-weight: 700;
+    }
+    .chat-avatar.private { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .chat-avatar.group { background: linear-gradient(135deg, #22c55e, #10b981); }
+    .chat-avatar.channel { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+    .chat-avatar img {
+        width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    }
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-subtitle { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-meta { text-align: right; flex-shrink: 0; }
+    .chat-time { font-size: 0.75rem; color: var(--text-secondary); }
+    .chat-type-badge {
+        padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600;
+        display: inline-block; margin-top: 4px;
+    }
+    .chat-type-badge.private { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .chat-type-badge.group { background: rgba(34,197,94,0.15); color: #86efac; }
+    .chat-type-badge.channel { background: rgba(245,158,11,0.15); color: #fde68a; }
+    .empty-chats {
+        text-align: center; padding: 64px 20px;
+        background: var(--bg-card); border-radius: 16px;
+        border: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.5rem;">💬 Chatlar</h2>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">Telegram chatlaringiz ro'yxati</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if telegram_account %}
+        <a href="{% url 'telegramai:chats_list' %}?account={{ telegram_account.id }}&refresh=1" class="btn btn-outline-primary">🔄 Yangilash</a>
+        {% endif %}
+        <a href="{% url 'telegramai:chats_list_new' %}" class="btn btn-primary">🌐 Telegram Web</a>
+    </div>
+</div>
+
+<!-- Account Selector -->
+<div class="chat-controls">
+    <span class="text-secondary fw-semibold" style="font-size:0.85rem;">📱 Account:</span>
+    {% for acc in telegram_accounts %}
+        <a href="{% url 'telegramai:chats_list' %}?account={{ acc.id }}"
+           class="btn btn-sm {% if telegram_account.id == acc.id %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+            {{ acc.phone_number }}
+        </a>
+    {% endfor %}
+</div>
+
+{% if chats %}
+<div class="chat-grid">
+    {% for chat in chats %}
+    <a href="{% url 'telegramai:chats_detail' telegram_account.id chat.chat_id %}" class="chat-item">
+        <div class="chat-avatar {{ chat.chat_type }}">
+            {% if chat.avatar %}
+                <img src="{{ chat.avatar }}" alt="">
+            {% else %}
+                {% if chat.chat_type == 'private' %}👤{% elif chat.chat_type == 'group' %}👥{% else %}📢{% endif %}
+            {% endif %}
+        </div>
+        <div class="chat-info">
+            <div class="chat-title">{{ chat.title|default:chat.username|default:"Nomsiz" }}</div>
+            <div class="chat-subtitle">
+                {% if chat.username %}@{{ chat.username }}{% endif %}
+                {% if chat.member_count %} · {{ chat.member_count }} a'zo{% endif %}
+            </div>
+        </div>
+        <div class="chat-meta">
+            <div class="chat-time">{{ chat.updated_at|date:"d.m H:i" }}</div>
+            <span class="chat-type-badge {{ chat.chat_type }}">
+                {% if chat.chat_type == 'private' %}Shaxsiy{% elif chat.chat_type == 'group' %}Guruh{% else %}Kanal{% endif %}
+            </span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-chats">
+    <div style="font-size:4rem; margin-bottom:20px;">💬</div>
+    <h4 class="fw-bold mb-2">Chatlar topilmadi</h4>
+    <p class="text-secondary mb-4">Chatlarni Telegram'dan sinxronlashtiring</p>
+    {% if telegram_account %}
+        <a href="{% url 'telegramai:chats_list' %}?account={{ telegram_account.id }}&refresh=1" class="btn btn-primary btn-lg">🔄 Chatlarni Yuklash</a>
+    {% else %}
+        <p class="text-secondary">Avval Telegram accountni tanlang</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

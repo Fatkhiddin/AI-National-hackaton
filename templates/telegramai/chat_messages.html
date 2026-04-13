@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Chat Xabarlari{% endblock %}
+{% block page_title %}Chat Xabarlari{% endblock %}
+
+{% block extra_css %}
+<style>
+    .msg-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .msg-row {
+        padding: 12px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        display: flex; gap: 12px; align-items: flex-start;
+    }
+    .msg-row:last-child { border-bottom: none; }
+    .msg-row:hover { background: var(--bg-card-hover); }
+    .msg-direction {
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; flex-shrink: 0;
+    }
+    .msg-direction.out { background: rgba(99,102,241,0.15); }
+    .msg-direction.in { background: rgba(34,197,94,0.15); }
+    .msg-text { flex: 1; font-size: 0.9rem; line-height: 1.5; word-break: break-word; }
+    .msg-meta { font-size: 0.75rem; color: var(--text-secondary); flex-shrink: 0; text-align: right; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.3rem;">💬 {{ chat.title|default:"Chat" }}</h2>
+        <p class="text-secondary mb-0" style="font-size:0.85rem;">{{ page_obj.paginator.count }} ta xabar</p>
+    </div>
+    <a href="{% url 'telegramai:chats_list' %}" class="btn btn-outline-secondary btn-sm">← Ortga</a>
+</div>
+
+<!-- Send Message -->
+<div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:16px 20px;margin-bottom:20px;">
+    <form method="POST" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="text" name="message_text" class="form-control" placeholder="Xabar yozing..." required>
+        <button type="submit" class="btn btn-primary">📨 Yuborish</button>
+    </form>
+</div>
+
+<div class="msg-card">
+    {% for msg in page_obj %}
+    <div class="msg-row">
+        <div class="msg-direction {% if msg.is_outgoing %}out{% else %}in{% endif %}">
+            {% if msg.is_outgoing %}📤{% else %}📥{% endif %}
+        </div>
+        <div class="msg-text">{{ msg.text }}</div>
+        <div class="msg-meta">{{ msg.date|date:"d.m.Y" }}<br>{{ msg.date|date:"H:i" }}</div>
+    </div>
+    {% empty %}
+    <div style="text-align:center; padding:40px;">
+        <p class="text-secondary">Xabarlar topilmadi</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}" style="background:var(--bg-card);border-color:var(--border-color);color:var(--text-primary);">←</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link" style="background:var(--accent);border-color:var(--accent);">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}" style="background:var(--bg-card);border-color:var(--border-color);color:var(--text-primary);">→</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

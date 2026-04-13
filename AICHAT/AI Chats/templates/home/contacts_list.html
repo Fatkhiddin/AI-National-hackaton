@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+{% block title %}Kontaktlar - Telegram Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-address-book me-2"></i>
+        Kontaktlar
+    </h1>
+    <div class="d-flex gap-2">
+        <a href="{% url 'import_contacts' %}" class="btn btn-success">
+            <i class="fas fa-file-import me-1"></i>
+            Import Qilish
+        </a>
+        <a href="{% url 'export_contacts' %}?account={{ request.GET.account }}" class="btn btn-primary">
+            <i class="fas fa-file-export me-1"></i>
+            Export Qilish
+        </a>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Qidirish</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="search" 
+                       name="search" 
+                       placeholder="Ism, telefon yoki username..."
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <label for="account" class="form-label">Telegram Account</label>
+                <select class="form-select" id="account" name="account">
+                    <option value="">Barchasi</option>
+                    {% for account in telegram_accounts %}
+                        <option value="{{ account.id }}" {% if request.GET.account == account.id|stringformat:"s" %}selected{% endif %}>
+                            {{ account.phone_number }} - {{ account.session_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Holat</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Barchasi</option>
+                    <option value="added" {% if request.GET.status == 'added' %}selected{% endif %}>Qo'shilgan</option>
+                    <option value="not_added" {% if request.GET.status == 'not_added' %}selected{% endif %}>Qo'shilmagan</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>
+                        Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Contacts Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            Kontaktlar ro'yxati
+            {% if page_obj %}
+                <span class="badge bg-primary ms-2">{{ page_obj.paginator.count }}</span>
+            {% endif %}
+        </h5>
+        {% if telegram_accounts %}
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-sync-alt me-1"></i>
+                Sinxronlash
+            </button>
+            <ul class="dropdown-menu">
+                {% for account in telegram_accounts %}
+                    <li><h6 class="dropdown-header">{{ account.phone_number }}</h6></li>
+                    <li>
+                        <button class="dropdown-item" onclick="syncTelegramContacts({{ account.id }})">
+                            <i class="fas fa-download me-2"></i>
+                            Telegram dan olib kelish
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" onclick="addContactsToTelegram({{ account.id }})">
+                            <i class="fas fa-upload me-2"></i>
+                            Telegramga qo'shish
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" onclick="fixPhoneNumbers({{ account.id }})">
+                            <i class="fas fa-phone me-2"></i>
+                            Raqamlarni to'g'irlash
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item text-warning" onclick="resetContactsStatus({{ account.id }})">
+                            <i class="fas fa-undo me-2"></i>
+                            Holatni reset qilish
+                        </button>
+                    </li>
+                    {% if not forloop.last %}<li><hr class="dropdown-divider"></li>{% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ism</th>
+                            <th>Telefon</th>
+                            <th>Username</th>
+                            <th>Account</th>
+                            <th>Holat</th>
+                            <th>Qo'shilgan</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in page_obj %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>{{ contact.name|default:"--" }}</strong>
+                                        {% if contact.first_name or contact.last_name %}
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ contact.first_name }} {{ contact.last_name }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <code>{{ contact.phone_number }}</code>
+                                    {% if contact.is_premium %}
+                                        <i class="fas fa-crown text-warning ms-1" title="Premium"></i>
+                                    {% endif %}
+                                    {% if contact.is_bot %}
+                                        <i class="fas fa-robot text-info ms-1" title="Bot"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contact.username %}
+                                        <a href="https://t.me/{{ contact.username }}" 
+                                           target="_blank" 
+                                           class="text-decoration-none">
+                                            @{{ contact.username }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contact.telegram_account %}
+                                        <small class="text-muted">
+                                            {{ contact.telegram_account.phone_number }}
+                                        </small>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contact.added_to_telegram %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>
+                                            Qo'shilgan
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Kutmoqda
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ contact.created_at|date:"d.m.Y H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if contact.username %}
+                                            <a href="https://t.me/{{ contact.username }}" 
+                                               target="_blank" 
+                                               class="btn btn-outline-primary btn-sm"
+                                               title="Telegramda ochish">
+                                                <i class="fab fa-telegram-plane"></i>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'admin:home_contact_change' contact.id %}" 
+                                           class="btn btn-outline-secondary btn-sm"
+                                           title="Tahrirlash">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <nav aria-label="Kontaktlar pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-address-book fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Kontaktlar topilmadi</h5>
+                <p class="text-muted mb-4">
+                    {% if request.GET.search or request.GET.status %}
+                        Filter shartlariga mos kontakt topilmadi. Filterlarni o'zgartiring.
+                    {% elif request.GET.account %}
+                        Bu accountda hali kontakt yo'q. Telegram dan yuklab oling.
+                    {% else %}
+                        Hali kontakt qo'shilmagan. Telegram dan yuklab oling yoki Excel fayldan import qiling.
+                    {% endif %}
+                </p>
+                {% if request.GET.account %}
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button onclick="syncTelegramContacts({{ request.GET.account }})" class="btn btn-primary">
+                            <i class="fas fa-download me-1"></i>
+                            Telegram dan yuklab olish
+                        </button>
+                        <a href="{% url 'import_contacts' %}" class="btn btn-success">
+                            <i class="fas fa-file-import me-1"></i>
+                            Excel dan import qilish
+                        </a>
+                    </div>
+                {% else %}
+                    <a href="{% url 'import_contacts' %}" class="btn btn-success">
+                        <i class="fas fa-file-import me-1"></i>
+                        Kontakt Import Qilish
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stats Cards -->
+{% if page_obj %}
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-primary">{{ total_contacts }}</h4>
+                <p class="text-muted mb-0">Jami Kontaktlar</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-success">{{ added_contacts }}</h4>
+                <p class="text-muted mb-0">Qo'shilgan</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-warning">{{ pending_contacts }}</h4>
+                <p class="text-muted mb-0">Kutmoqda</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-info">{{ premium_contacts }}</h4>
+                <p class="text-muted mb-0">Premium</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
+<script>
+function syncTelegramContacts(accountId) {
+    if (!confirm('Telegram dan kontaktlarni sinxronlashtirmoqchimisiz?')) {
+        return;
+    }
+    
+    // Find CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        alert('CSRF token topilmadi. Sahifani yangilab qayta urinib ko\'ring.');
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sinxronlanmoqda...';
+    button.disabled = true;
+    
+    fetch(`/contacts/sync/${accountId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken.value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Muvaffaqiyat: ' + data.message);
+            location.reload();
+        } else {
+            alert('Xatolik: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+
+function addContactsToTelegram(accountId) {
+    if (!confirm('Bazadagi kontaktlarni Telegramga qo\'shmoqchimisiz?')) {
+        return;
+    }
+    
+    // Find CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        alert('CSRF token topilmadi. Sahifani yangilab qayta urinib ko\'ring.');
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Qo\'shilmoqda...';
+    button.disabled = true;
+    
+    fetch(`/contacts/add-to-telegram/${accountId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken.value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Muvaffaqiyat: ${data.message}\nQo\'shildi: ${data.added}, Import qilindi: ${data.imported}`);
+            location.reload();
+        } else {
+            alert('Xatolik: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+
+function fixPhoneNumbers(accountId) {
+    if (!confirm('Telefon raqamlarini to\'g\'ri formatga keltirmoqchimisiz?')) {
+        return;
+    }
+    
+    // Find CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        alert('CSRF token topilmadi. Sahifani yangilab qayta urinib ko\'ring.');
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> To\'g\'irlanmoqda...';
+    button.disabled = true;
+    
+    fetch(`/contacts/fix-phones/${accountId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken.value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Muvaffaqiyat: ${data.message}`);
+            location.reload();
+        } else {
+            alert('Xatolik: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+
+function resetContactsStatus(accountId) {
+    if (!confirm('Barcha kontaktlar holatini reset qilmoqchimisiz? (Barcha kontaktlar "qo\'shilmagan" holatga o\'tadi)')) {
+        return;
+    }
+    
+    // Find CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        alert('CSRF token topilmadi. Sahifani yangilab qayta urinib ko\'ring.');
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reset qilinmoqda...';
+    button.disabled = true;
+    
+    fetch(`/contacts/reset-status/${accountId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken.value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Muvaffaqiyat: ${data.message}`);
+            location.reload();
+        } else {
+            alert('Xatolik: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Xatolik yuz berdi: ' + error);
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        button.innerHTML = originalHtml;
+        button.disabled = false;
+    });
+}
+</script>
+{% endblock %}

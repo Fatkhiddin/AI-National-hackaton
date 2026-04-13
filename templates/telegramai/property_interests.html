@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Property Interests{% endblock %}
+{% block page_title %}Property Interests{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        margin-bottom: 20px; padding: 16px 20px;
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 14px;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        color: var(--text-primary); border-radius: 10px; height: 42px; font-size: 0.85rem;
+    }
+    .filter-bar .form-control:focus,
+    .filter-bar .form-select:focus {
+        border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    .filter-bar .form-select option { background: var(--bg-primary); }
+    .stat-mini { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+    .stat-mini-card {
+        flex: 1; min-width: 140px;
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; text-align: center;
+    }
+    .stat-mini-value { font-size: 1.4rem; font-weight: 800; }
+    .stat-mini-label { font-size: 0.75rem; color: var(--text-secondary); }
+    .interest-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 10px;
+        display: flex; align-items: center; gap: 16px;
+        transition: all 0.2s;
+    }
+    .interest-card:hover { border-color: rgba(99,102,241,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .interest-avatar {
+        width: 46px; height: 46px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; flex-shrink: 0;
+    }
+    .interest-avatar.interested { background: rgba(34,197,94,0.12); }
+    .interest-avatar.rejected { background: rgba(239,68,68,0.12); }
+    .interest-avatar.viewed { background: rgba(99,102,241,0.12); }
+    .interest-avatar.pending { background: rgba(245,158,11,0.12); }
+    .status-pill {
+        padding: 4px 12px; border-radius: 16px; font-size: 0.7rem; font-weight: 600;
+    }
+    .status-pill.interested { background: rgba(34,197,94,0.12); color: #86efac; }
+    .status-pill.rejected { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .status-pill.viewed { background: rgba(99,102,241,0.12); color: #a5b4fc; }
+    .status-pill.pending { background: rgba(245,158,11,0.12); color: #fde68a; }
+    .empty-state {
+        text-align: center; padding: 50px 20px;
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1" style="font-size:1.5rem;">🏠 Property Interests</h2>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">Qiziqishlar va mulk so'rovlarini kuzatish</p>
+    </div>
+    <a href="{% url 'telegramai:dashboard' %}" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+</div>
+
+<!-- Mini Stats -->
+<div class="stat-mini">
+    <div class="stat-mini-card">
+        <div class="stat-mini-value" style="color:var(--text-primary);">{{ total_interests|default:"0" }}</div>
+        <div class="stat-mini-label">Jami</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value" style="color:#86efac;">{{ interested_count|default:"0" }}</div>
+        <div class="stat-mini-label">Qiziqdi</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value" style="color:#fca5a5;">{{ rejected_count|default:"0" }}</div>
+        <div class="stat-mini-label">Rad etdi</div>
+    </div>
+    <div class="stat-mini-card">
+        <div class="stat-mini-value" style="color:#a5b4fc;">{{ viewed_count|default:"0" }}</div>
+        <div class="stat-mini-label">Ko'rdi</div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" class="d-flex gap-2 flex-wrap flex-grow-1">
+        <input type="text" class="form-control" name="search" placeholder="🔍 Qidirish..."
+               value="{{ search_query|default:'' }}" style="max-width:260px;">
+        <select class="form-select" name="status" style="max-width:180px;" onchange="this.form.submit()">
+            <option value="">Barcha statuslar</option>
+            <option value="interested" {% if status_filter == 'interested' %}selected{% endif %}>✅ Qiziqdi</option>
+            <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>❌ Rad etdi</option>
+            <option value="viewed" {% if status_filter == 'viewed' %}selected{% endif %}>👁️ Ko'rdi</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>⏳ Kutilmoqda</option>
+        </select>
+        <button type="submit" class="btn btn-sm" style="background:var(--accent); color:#fff; border-radius:10px; padding:8px 18px;">
+            Filtrlash
+        </button>
+    </form>
+</div>
+
+<!-- Interest List -->
+{% if interests %}
+    {% for interest in interests %}
+    <div class="interest-card">
+        <div class="interest-avatar {{ interest.status|default:'pending' }}">
+            {% if interest.status == 'interested' %}✅{% elif interest.status == 'rejected' %}❌{% elif interest.status == 'viewed' %}👁️{% else %}⏳{% endif %}
+        </div>
+        <div class="flex-grow-1">
+            <div class="fw-semibold" style="font-size:0.9rem;">
+                {% if interest.contact %}{{ interest.contact.first_name }} {{ interest.contact.last_name }}{% else %}Noma'lum{% endif %}
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">
+                {% if interest.property_name %}🏠 {{ interest.property_name }}{% endif %}
+                {% if interest.phone_number %} · 📱 {{ interest.phone_number }}{% endif %}
+            </div>
+            {% if interest.note %}
+            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:4px;">
+                💬 {{ interest.note|truncatewords:15 }}
+            </div>
+            {% endif %}
+        </div>
+        <div class="text-end">
+            <span class="status-pill {{ interest.status|default:'pending' }}">
+                {% if interest.status == 'interested' %}Qiziqdi{% elif interest.status == 'rejected' %}Rad etdi{% elif interest.status == 'viewed' %}Ko'rdi{% else %}Kutilmoqda{% endif %}
+            </span>
+            <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:6px;">
+                {{ interest.created_at|timesince }} oldin
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div style="font-size:3.5rem; margin-bottom:12px;">🏠</div>
+        <h5 class="fw-bold mb-2">Hali qiziqish yo'q</h5>
+        <p class="text-secondary" style="font-size:0.9rem;">
+            {% if search_query or status_filter %}Filtr bo'yicha natija topilmadi{% else %}Qiziqishlar AI monitoring orqali avtomatik to'planadi{% endif %}
+        </p>
+    </div>
+{% endif %}
+{% endblock %}

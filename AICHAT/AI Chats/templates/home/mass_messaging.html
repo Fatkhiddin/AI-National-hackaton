@@ -1,0 +1,561 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mass Messaging - Telegram Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    .account-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .account-card:hover {
+        border-color: #0088cc;
+        box-shadow: 0 2px 8px rgba(0,136,204,0.2);
+    }
+    .account-card.selected {
+        border-color: #0088cc;
+        background-color: #e3f2fd;
+    }
+    .account-card.spam-blocked {
+        border-color: #dc3545;
+        background-color: #f8d7da;
+        cursor: not-allowed;
+    }
+    .contact-item {
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .contact-item:hover {
+        background-color: #f5f5f5;
+    }
+    .contact-item.selected {
+        background-color: #e3f2fd;
+        border-color: #0088cc;
+    }
+    .contact-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .status-active { background-color: #d4edda; color: #155724; }
+    .status-spam { background-color: #f8d7da; color: #721c24; }
+    .campaign-stats {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .stat-box {
+        text-align: center;
+        padding: 15px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+    }
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+        display: block;
+    }
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    .ai-prompt-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0088cc;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    .progress-item {
+        padding: 10px;
+        border-left: 3px solid #28a745;
+        background-color: #f8f9fa;
+        margin-bottom: 8px;
+        border-radius: 3px;
+    }
+    .progress-item.error {
+        border-left-color: #dc3545;
+        background-color: #f8d7da;
+    }
+    #progressLog {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-paper-plane"></i> Mass Messaging</h2>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="selectAllContacts()">
+                        <i class="fas fa-check-square"></i> Hammasini tanlash
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="deselectAll()">
+                        <i class="fas fa-times"></i> Tozalash
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campaign Statistics -->
+            <div class="campaign-stats" id="campaignStats" style="display: none;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-box">
+                            <span class="stat-number" id="statTotal">0</span>
+                            <span class="stat-label">Jami</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-box">
+                            <span class="stat-number" id="statSent">0</span>
+                            <span class="stat-label">Yuborildi</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-box">
+                            <span class="stat-number" id="statFailed">0</span>
+                            <span class="stat-label">Xatolik</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-box">
+                            <span class="stat-number" id="statSpam">0</span>
+                            <span class="stat-label">Spam Block</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="massMessagingForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Left Column: Accounts and Contacts -->
+                    <div class="col-md-6">
+                        <!-- Accounts Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-users"></i> 1. Accountlarni tanlang</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="accountsList">
+                                    {% for account in accounts %}
+                                    <div class="account-card {% if account.is_spam_blocked %}spam-blocked{% endif %}" 
+                                         data-account-id="{{ account.id }}"
+                                         onclick="{% if not account.is_spam_blocked %}toggleAccount({{ account.id }}){% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ account.phone_number }}</h6>
+                                                <small class="text-muted">{{ account.session_name }}</small>
+                                            </div>
+                                            <div>
+                                                {% if account.is_spam_blocked %}
+                                                <span class="status-badge status-spam">
+                                                    <i class="fas fa-ban"></i> SPAM BLOCKED
+                                                </span>
+                                                {% else %}
+                                                <span class="status-badge status-active">
+                                                    <i class="fas fa-check-circle"></i> Active
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if account.spam_info %}
+                                        <div class="mt-2">
+                                            <small class="text-danger">
+                                                <i class="fas fa-exclamation-triangle"></i> {{ account.spam_info }}
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% empty %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-info-circle"></i> Accountlar topilmadi
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contacts Section -->
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-address-book"></i> 2. Contactlarni tanlang</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="contactSearch" 
+                                           placeholder="Qidirish..." onkeyup="filterContacts()">
+                                </div>
+                                <div id="contactsInfo" class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Avval accountni tanlang
+                                </div>
+                                <div class="contact-list" id="contactsList">
+                                    <!-- Contacts will be loaded here -->
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">Tanlangan: <strong id="selectedCount">0</strong></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Message Settings -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-comment-alt"></i> 3. Xabar sozlamalari</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- AI Toggle -->
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="useAI" onchange="toggleAI()">
+                                    <label class="form-check-label" for="useAI">
+                                        <i class="fas fa-robot"></i> AI yordamida xabar yuborish
+                                    </label>
+                                </div>
+
+                                <!-- Manual Message -->
+                                <div id="manualMessageSection">
+                                    <label class="form-label">Xabar matni:</label>
+                                    <textarea class="form-control" id="messageTemplate" rows="6" 
+                                              placeholder="Xabar yozing..."></textarea>
+                                </div>
+
+                                <!-- AI Prompt -->
+                                <div id="aiPromptSection" style="display: none;">
+                                    <label class="form-label">AI Prompt:</label>
+                                    <textarea class="form-control" id="aiPrompt" rows="6" 
+                                              placeholder="Misol: Foydalanuvchidan qanday uy kerak ekanligini so'rab aniqlashtirishingiz kerak. Do'stona muloqot qiling va ularning ehtiyojlarini bilib oling."></textarea>
+                                    <div class="ai-prompt-box mt-2">
+                                        <small>
+                                            <i class="fas fa-lightbulb"></i> <strong>Maslahat:</strong> 
+                                            AI har bir contact uchun unique xabar yaratadi. 
+                                            Prompt aniq va batafsil bo'lishi kerak.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Delay -->
+                                <div class="mt-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-clock"></i> Xabarlar orasidagi kutish (soniya):
+                                    </label>
+                                    <input type="number" class="form-control" id="delayBetween" value="5" min="1" max="60">
+                                    <small class="text-muted">Spam blockning oldini olish uchun kamida 3-5 soniya tavsiya etiladi</small>
+                                </div>
+
+                                <!-- Campaign Title -->
+                                <div class="mt-3">
+                                    <label class="form-label">Campaign nomi:</label>
+                                    <input type="text" class="form-control" id="campaignTitle" 
+                                           placeholder="Masalan: Uy-joy takliflari - Dekabr 2025">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Send Button -->
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="button" class="btn btn-lg btn-primary w-100" 
+                                        onclick="startCampaign()" id="startBtn">
+                                    <i class="fas fa-rocket"></i> Yuborishni boshlash
+                                </button>
+                                <button type="button" class="btn btn-lg btn-danger w-100 mt-2" 
+                                        onclick="stopCampaign()" id="stopBtn" style="display: none;">
+                                    <i class="fas fa-stop"></i> To'xtatish
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Log -->
+                        <div class="card mt-3" id="progressCard" style="display: none;">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0"><i class="fas fa-tasks"></i> Jarayon</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="progressLog"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedAccounts = [];
+let selectedContacts = [];
+let campaignRunning = false;
+let currentCampaignId = null;
+
+function toggleAccount(accountId) {
+    const index = selectedAccounts.indexOf(accountId);
+    const card = document.querySelector(`.account-card[data-account-id="${accountId}"]`);
+    
+    if (index > -1) {
+        selectedAccounts.splice(index, 1);
+        card.classList.remove('selected');
+    } else {
+        selectedAccounts.push(accountId);
+        card.classList.add('selected');
+    }
+    
+    loadContacts();
+}
+
+function loadContacts() {
+    if (selectedAccounts.length === 0) {
+        document.getElementById('contactsList').innerHTML = '';
+        document.getElementById('contactsInfo').style.display = 'block';
+        return;
+    }
+    
+    document.getElementById('contactsInfo').style.display = 'none';
+    
+    fetch('/api/get-contacts-for-accounts/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({account_ids: selectedAccounts})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const contactsList = document.getElementById('contactsList');
+        contactsList.innerHTML = '';
+        
+        data.contacts.forEach(contact => {
+            const div = document.createElement('div');
+            div.className = 'contact-item';
+            div.dataset.contactId = contact.id;
+            div.onclick = () => toggleContact(contact.id);
+            
+            div.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>${contact.name || contact.first_name || 'Unknown'}</strong><br>
+                        <small class="text-muted">${contact.phone_number}</small>
+                    </div>
+                    <div>
+                        <small class="badge bg-secondary">${contact.account_phone}</small>
+                    </div>
+                </div>
+            `;
+            
+            contactsList.appendChild(div);
+        });
+    });
+}
+
+function toggleContact(contactId) {
+    const index = selectedContacts.indexOf(contactId);
+    const item = document.querySelector(`.contact-item[data-contact-id="${contactId}"]`);
+    
+    if (index > -1) {
+        selectedContacts.splice(index, 1);
+        item.classList.remove('selected');
+    } else {
+        selectedContacts.push(contactId);
+        item.classList.add('selected');
+    }
+    
+    document.getElementById('selectedCount').textContent = selectedContacts.length;
+}
+
+function selectAllContacts() {
+    document.querySelectorAll('.contact-item').forEach(item => {
+        const contactId = parseInt(item.dataset.contactId);
+        if (!selectedContacts.includes(contactId)) {
+            selectedContacts.push(contactId);
+            item.classList.add('selected');
+        }
+    });
+    document.getElementById('selectedCount').textContent = selectedContacts.length;
+}
+
+function deselectAll() {
+    selectedAccounts = [];
+    selectedContacts = [];
+    document.querySelectorAll('.account-card').forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('selected'));
+    document.getElementById('selectedCount').textContent = '0';
+    document.getElementById('contactsList').innerHTML = '';
+    document.getElementById('contactsInfo').style.display = 'block';
+}
+
+function toggleAI() {
+    const useAI = document.getElementById('useAI').checked;
+    document.getElementById('manualMessageSection').style.display = useAI ? 'none' : 'block';
+    document.getElementById('aiPromptSection').style.display = useAI ? 'block' : 'none';
+}
+
+function filterContacts() {
+    const searchTerm = document.getElementById('contactSearch').value.toLowerCase();
+    document.querySelectorAll('.contact-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+}
+
+function startCampaign() {
+    if (selectedAccounts.length === 0) {
+        alert('Kamida bitta accountni tanlang!');
+        return;
+    }
+    
+    if (selectedContacts.length === 0) {
+        alert('Kamida bitta contactni tanlang!');
+        return;
+    }
+    
+    const useAI = document.getElementById('useAI').checked;
+    const messageTemplate = document.getElementById('messageTemplate').value;
+    const aiPrompt = document.getElementById('aiPrompt').value;
+    
+    if (!useAI && !messageTemplate) {
+        alert('Xabar matnini kiriting!');
+        return;
+    }
+    
+    if (useAI && !aiPrompt) {
+        alert('AI prompt kiriting!');
+        return;
+    }
+    
+    const campaignTitle = document.getElementById('campaignTitle').value || 'Nomsiz Campaign';
+    const delay = parseInt(document.getElementById('delayBetween').value);
+    
+    const data = {
+        account_ids: selectedAccounts,
+        contact_ids: selectedContacts,
+        message_template: messageTemplate,
+        ai_prompt: aiPrompt,
+        use_ai: useAI,
+        campaign_title: campaignTitle,
+        delay_between_messages: delay
+    };
+    
+    campaignRunning = true;
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('stopBtn').style.display = 'block';
+    document.getElementById('campaignStats').style.display = 'block';
+    document.getElementById('progressCard').style.display = 'block';
+    
+    document.getElementById('statTotal').textContent = selectedContacts.length;
+    
+    fetch('/api/start-campaign/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            currentCampaignId = result.campaign_id;
+            addLog('Campaign boshlandi!', 'success');
+            monitorCampaign();
+        } else {
+            addLog('Xatolik: ' + result.error, 'error');
+            resetUI();
+        }
+    });
+}
+
+function stopCampaign() {
+    if (!currentCampaignId) return;
+    
+    fetch(`/api/stop-campaign/${currentCampaignId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        addLog('Campaign to\'xtatildi', 'info');
+        resetUI();
+    });
+}
+
+function monitorCampaign() {
+    if (!campaignRunning || !currentCampaignId) return;
+    
+    fetch(`/api/campaign-status/${currentCampaignId}/`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('statSent').textContent = data.sent_count;
+        document.getElementById('statFailed').textContent = data.failed_count;
+        document.getElementById('statSpam').textContent = data.spam_blocked_count;
+        
+        if (data.latest_logs) {
+            data.latest_logs.forEach(log => {
+                addLog(log.message, log.status);
+            });
+        }
+        
+        if (data.status === 'completed' || data.status === 'stopped') {
+            addLog('Campaign yakunlandi!', 'success');
+            resetUI();
+        } else {
+            setTimeout(monitorCampaign, 2000);
+        }
+    });
+}
+
+function addLog(message, type) {
+    const log = document.getElementById('progressLog');
+    const div = document.createElement('div');
+    div.className = `progress-item ${type === 'error' ? 'error' : ''}`;
+    div.innerHTML = `<small>${new Date().toLocaleTimeString()}: ${message}</small>`;
+    log.insertBefore(div, log.firstChild);
+}
+
+function resetUI() {
+    campaignRunning = false;
+    document.getElementById('startBtn').style.display = 'block';
+    document.getElementById('stopBtn').style.display = 'none';
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

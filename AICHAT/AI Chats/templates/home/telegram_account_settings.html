@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - {{ telegram_account.phone_number }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    :root {
+        --telegram-bg: #0e1621;
+        --telegram-bg-light: #17212b;
+        --telegram-accent: #2b5278;
+        --telegram-accent-hover: #5288c1;
+        --telegram-text: #ffffff;
+        --telegram-text-secondary: #aaaaaa;
+        --telegram-border: #2c3e50;
+        --danger-color: #e74c3c;
+        --danger-hover: #c0392b;
+        --warning-color: #f39c12;
+        --warning-hover: #e67e22;
+    }
+
+    body {
+        background-color: var(--telegram-bg);
+        color: var(--telegram-text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .settings-container {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    .settings-header {
+        background: linear-gradient(135deg, var(--telegram-accent) 0%, var(--telegram-accent-hover) 100%);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .settings-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .account-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .account-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--telegram-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 600;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .account-details h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .account-details p {
+        margin: 5px 0 0 0;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+    }
+
+    .settings-section {
+        background: var(--telegram-bg-light);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 20px 0;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--telegram-border);
+    }
+
+    .setting-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background: var(--telegram-bg);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--telegram-accent-hover) !important;
+        box-shadow: 0 0 0 3px rgba(82, 136, 193, 0.1);
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .setting-item:hover {
+        background: var(--telegram-accent);
+        transform: translateX(5px);
+    }
+
+    .setting-info {
+        flex: 1;
+    }
+
+    .setting-info h3 {
+        margin: 0 0 5px 0;
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    .setting-info p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--telegram-text-secondary);
+        line-height: 1.4;
+    }
+
+    .setting-action {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: var(--telegram-accent-hover);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #6ba3d8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(82, 136, 193, 0.4);
+    }
+
+    .btn-warning {
+        background: var(--warning-color);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: var(--warning-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+    }
+
+    .btn-danger {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: var(--danger-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    }
+
+    .btn-secondary {
+        background: var(--telegram-border);
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #34495e;
+    }
+
+    .coming-soon {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .coming-soon-badge {
+        background: var(--warning-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .badge-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .badge-secondary {
+        background: var(--telegram-bg-secondary);
+        color: var(--telegram-text-secondary);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--telegram-text);
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 15px;
+        background: var(--telegram-bg-secondary);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: var(--telegram-text);
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--telegram-blue);
+        background: var(--telegram-bg);
+    }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .alert-danger {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--telegram-text-secondary);
+        text-decoration: none;
+        margin-bottom: 20px;
+        transition: color 0.3s ease;
+    }
+
+    .back-link:hover {
+        color: var(--telegram-text);
+    }
+
+    .danger-zone {
+        border: 2px solid var(--danger-color);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .danger-zone .section-title {
+        color: var(--danger-color);
+        border-bottom-color: var(--danger-color);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--telegram-bg-light);
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content h2 {
+        margin: 0 0 15px 0;
+        color: var(--danger-color);
+    }
+
+    .modal-content p {
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    body.modal-open {
+        overflow: hidden;
+    }
+</style>
+</head>
+<body>
+<div class="settings-container">
+    <a href="{% url 'telegram_accounts' %}" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        <span>Ortga qaytish</span>
+    </a>
+
+    <div class="settings-header">
+        <h1><i class="fas fa-cog"></i> Account Settings</h1>
+        <div class="account-info">
+            <div class="account-avatar">
+                {% if profile_info and profile_info.first_name %}
+                    {{ profile_info.first_name|slice:":1"|upper }}
+                {% else %}
+                    {{ telegram_account.phone_number|slice:":1" }}
+                {% endif %}
+            </div>
+            <div class="account-details">
+                <h2>
+                    {% if profile_info and profile_info.first_name %}
+                        {{ profile_info.first_name }} {{ profile_info.last_name }}
+                        {% if profile_info.premium %}
+                            <i class="fas fa-crown" style="color: #f39c12;"></i>
+                        {% endif %}
+                        {% if profile_info.verified %}
+                            <i class="fas fa-check-circle" style="color: #3498db;"></i>
+                        {% endif %}
+                    {% else %}
+                        {{ telegram_account.phone_number }}
+                    {% endif %}
+                </h2>
+                <p>
+                    {% if profile_info and profile_info.username %}
+                        @{{ profile_info.username }} • 
+                    {% endif %}
+                    {{ telegram_account.phone_number }}
+                    {% if telegram_account.is_active %}
+                        • <i class="fas fa-check-circle" style="color: #2ecc71;"></i> Faol
+                    {% else %}
+                        • <i class="fas fa-times-circle" style="color: #e74c3c;"></i> Nofaol
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profil ma'lumotlari -->
+    {% if profile_info and profile_info.success %}
+    <div class="settings-section">
+        <h2 class="section-title"><i class="fas fa-user-edit"></i> Profil ma'lumotlari</h2>
+        
+        <form id="profileForm" onsubmit="updateProfile(event)">
+            <div class="setting-item" style="display: block;">
+                <div class="mb-3">
+                    <label class="form-label" style="color: var(--telegram-text); font-weight: 500;">
+                        <i class="fas fa-user"></i> Ism
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="first_name" 
+                           value="{{ profile_info.first_name }}"
+                           style="background: var(--telegram-bg); border: 1px solid var(--telegram-border); color: var(--telegram-text);">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label" style="color: var(--telegram-text); font-weight: 500;">
+                        <i class="fas fa-user"></i> Familiya
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="last_name" 
+                           value="{{ profile_info.last_name }}"
+                           style="background: var(--telegram-bg); border: 1px solid var(--telegram-border); color: var(--telegram-text);">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label" style="color: var(--telegram-text); font-weight: 500;">
+                        <i class="fas fa-at"></i> Username
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="username" 
+                           value="{{ profile_info.username }}"
+                           placeholder="username (@ siz)"
+                           style="background: var(--telegram-bg); border: 1px solid var(--telegram-border); color: var(--telegram-text);">
+                    <small style="color: var(--telegram-text-secondary);">@ belgisisiz kiriting</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label" style="color: var(--telegram-text); font-weight: 500;">
+                        <i class="fas fa-info-circle"></i> Bio
+                    </label>
+                    <textarea class="form-control" 
+                              name="bio" 
+                              rows="3"
+                              style="background: var(--telegram-bg); border: 1px solid var(--telegram-border); color: var(--telegram-text);"
+                    >{{ profile_info.bio }}</textarea>
+                    <small style="color: var(--telegram-text-secondary);">O'zingiz haqingizda qisqacha ma'lumot</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label" style="color: var(--telegram-text); font-weight: 500;">
+                        <i class="fas fa-phone"></i> Telefon
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           value="{{ profile_info.phone }}"
+                           disabled
+                           style="background: var(--telegram-border); border: 1px solid var(--telegram-border); color: var(--telegram-text-secondary);">
+                    <small style="color: var(--telegram-text-secondary);">Telefon raqamni o'zgartirib bo'lmaydi</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                    <i class="fas fa-save"></i> Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Asosiy sozlamalar -->
+    <div class="settings-section">
+        <h2 class="section-title"><i class="fas fa-sliders-h"></i> Asosiy sozlamalar</h2>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-comments"></i> Chatlar</h3>
+                <p>Telegram chatlarini ko'rish va xabar yuborish</p>
+            </div>
+            <div class="setting-action">
+                <a href="{% url 'chats_list' %}?account={{ telegram_account.id }}" class="btn btn-primary">
+                    <i class="fas fa-external-link-alt"></i> Ochish
+                </a>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-address-book"></i> Kontaktlar</h3>
+                <p>Telegram kontaktlarini ko'rish va boshqarish</p>
+            </div>
+            <div class="setting-action">
+                <a href="{% url 'contacts_list' %}" class="btn btn-primary">
+                    <i class="fas fa-external-link-alt"></i> Ochish
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kontaktlarni boshqarish -->
+    <div class="settings-section">
+        <h2 class="section-title"><i class="fas fa-users-cog"></i> Kontaktlarni boshqarish</h2>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-trash-alt"></i> Barcha kontaktlarni o'chirish</h3>
+                <p>Telegram accountdagi barcha kontaktlarni o'chiradi (qaytarib bo'lmaydi)</p>
+            </div>
+            <div class="setting-action">
+                <button onclick="confirmDeleteContacts()" class="btn btn-warning">
+                    <i class="fas fa-exclamation-triangle"></i> O'chirish
+                </button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-comments"></i> Barcha chatlarni o'chirish</h3>
+                <p>Barcha shaxsiy chatlar tarixini o'chiradi va guruh/kanallardan chiqadi (qaytarib bo'lmaydi)</p>
+            </div>
+            <div class="setting-action">
+                <button onclick="confirmDeleteChats()" class="btn btn-danger">
+                    <i class="fas fa-bomb"></i> O'chirish
+                </button>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-sync"></i> Kontaktlarni sinxronlash</h3>
+                <p>Telegram kontaktlarini bazaga yuklab olish</p>
+            </div>
+            <div class="setting-action">
+                <a href="{% url 'sync_telegram_contacts' telegram_account.id %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Sinxronlash
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-reply sozlamalari -->
+    <div class="settings-section">
+        <h2 class="section-title">
+            <i class="fas fa-robot"></i> Auto-reply sozlamalari
+            <span id="monitoringStatus" style="font-size: 14px; margin-left: 15px; font-weight: normal;">
+                <span class="loading" style="width: 12px; height: 12px;"></span> Tekshirilmoqda...
+            </span>
+            <button onclick="showCreateRuleModal()" class="btn btn-success" style="float: right; margin-top: -5px;">
+                <i class="fas fa-plus"></i> Yangi qoida
+            </button>
+        </h2>
+        
+        <div id="autoReplyRulesContainer">
+            <div class="text-center" style="padding: 40px; color: var(--telegram-text-secondary);">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+                <p style="margin-top: 15px;">Yuklanmoqda...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Qo'shimcha imkoniyatlar (keyinchalik) -->
+    <div class="settings-section">
+        <h2 class="section-title"><i class="fas fa-magic"></i> Qo'shimcha imkoniyatlar</h2>
+        
+        <div class="setting-item coming-soon">
+            <div class="setting-info">
+                <h3><i class="fas fa-user-shield"></i> Privacy sozlamalari <span class="coming-soon-badge">Tez orada</span></h3>
+                <p>Maxfiylik sozlamalarini boshqarish</p>
+            </div>
+            <div class="setting-action">
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-lock"></i> Yopiq
+                </button>
+            </div>
+        </div>
+
+        <div class="setting-item coming-soon">
+            <div class="setting-info">
+                <h3><i class="fas fa-filter"></i> Spam filter <span class="coming-soon-badge">Tez orada</span></h3>
+                <p>Spam xabarlarni avtomatik filtrlash</p>
+            </div>
+            <div class="setting-action">
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-lock"></i> Yopiq
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Xavfli zona -->
+    <div class="danger-zone">
+        <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Xavfli zona</h2>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <h3><i class="fas fa-trash"></i> Accountni o'chirish</h3>
+                <p>Bu accountni butunlay o'chiradi (session, bazadagi ma'lumotlar va barcha xabarlar). Bu amalni qaytarib bo'lmaydi!</p>
+            </div>
+            <div class="setting-action">
+                <button onclick="confirmDeleteAccount()" class="btn btn-danger">
+                    <i class="fas fa-skull-crossbones"></i> Accountni o'chirish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Contacts Modal -->
+<div id="deleteContactsModal" class="modal">
+    <div class="modal-content">
+        <h2><i class="fas fa-exclamation-triangle"></i> Kontaktlarni o'chirish</h2>
+        <p>Rostdan ham <strong>BARCHA</strong> kontaktlarni Telegram accountdan o'chirmoqchimisiz?</p>
+        <p style="color: var(--danger-color);">⚠️ Bu amalni qaytarib bo'lmaydi!</p>
+        <div class="modal-actions">
+            <button onclick="closeModal('deleteContactsModal')" class="btn btn-secondary">
+                Bekor qilish
+            </button>
+            <button onclick="deleteContacts()" class="btn btn-danger" id="deleteContactsBtn">
+                <i class="fas fa-trash"></i> Ha, o'chirish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Chats Modal -->
+<div id="deleteChatsModal" class="modal">
+    <div class="modal-content">
+        <h2><i class="fas fa-bomb"></i> Barcha chatlarni o'chirish</h2>
+        <p>Rostdan ham <strong>BARCHA</strong> chatlarni o'chirmoqchimisiz?</p>
+        <p style="color: var(--danger-color);">⚠️ Quyidagilar o'chiriladi:</p>
+        <ul style="color: var(--telegram-text-secondary); margin: 10px 0 20px 20px;">
+            <li>Barcha shaxsiy chatlar tarixi (ikki tomonlama)</li>
+            <li>Guruh va kanallardan chiqish</li>
+            <li>Guruh va kanallar tarixi</li>
+        </ul>
+        <p style="color: var(--danger-color); font-weight: 600;">Bu jarayon biroz vaqt olishi mumkin. Bu amalni qaytarib bo'lmaydi!</p>
+        <div class="modal-actions">
+            <button onclick="closeModal('deleteChatsModal')" class="btn btn-secondary">
+                Bekor qilish
+            </button>
+            <button onclick="deleteChats()" class="btn btn-danger" id="deleteChatsBtn">
+                <i class="fas fa-bomb"></i> Ha, barchasini o'chirish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="deleteAccountModal" class="modal">
+    <div class="modal-content">
+        <h2><i class="fas fa-skull-crossbones"></i> Accountni o'chirish</h2>
+        <p>Rostdan ham bu accountni <strong>BUTUNLAY</strong> o'chirmoqchimisiz?</p>
+        <p style="color: var(--danger-color);">⚠️ Quyidagilar o'chiriladi:</p>
+        <ul style="color: var(--telegram-text-secondary); margin: 10px 0 20px 20px;">
+            <li>Telegram session fayli</li>
+            <li>Bazadagi barcha xabarlar</li>
+            <li>Bazadagi barcha chatlar</li>
+            <li>Account ma'lumotlari</li>
+        </ul>
+        <p style="color: var(--danger-color); font-weight: 600;">Bu amalni qaytarib bo'lmaydi!</p>
+        <div class="modal-actions">
+            <button onclick="closeModal('deleteAccountModal')" class="btn btn-secondary">
+                Bekor qilish
+            </button>
+            <button onclick="deleteAccount()" class="btn btn-danger" id="deleteAccountBtn">
+                <i class="fas fa-trash"></i> Ha, butunlay o'chirish
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteContacts() {
+    document.getElementById('deleteContactsModal').classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+function confirmDeleteChats() {
+    document.getElementById('deleteChatsModal').classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+function confirmDeleteAccount() {
+    document.getElementById('deleteAccountModal').classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+    document.body.classList.remove('modal-open');
+}
+
+async function deleteContacts() {
+    const btn = document.getElementById('deleteContactsBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> O\'chirilmoqda...';
+    
+    try {
+        const response = await fetch('{% url "delete_all_contacts" telegram_account.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            closeModal('deleteContactsModal');
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function deleteChats() {
+    const btn = document.getElementById('deleteChatsBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> O\'chirilmoqda... (Bu biroz vaqt olishi mumkin)';
+    
+    try {
+        const response = await fetch('{% url "delete_all_chats" telegram_account.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            closeModal('deleteChatsModal');
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function deleteAccount() {
+    const btn = document.getElementById('deleteAccountBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> O\'chirilmoqda...';
+    
+    try {
+        const response = await fetch('{% url "delete_telegram_account" telegram_account.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            window.location.href = '{% url "telegram_accounts" %}';
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function updateProfile(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('profileForm');
+    const btn = document.getElementById('saveProfileBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Saqlanmoqda...';
+    
+    try {
+        const formData = new FormData(form);
+        
+        const response = await fetch('{% url "update_telegram_profile" telegram_account.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            location.reload();
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+// ==================== AUTO-REPLY FUNCTIONS ====================
+
+let currentEditingRule = null;
+
+async function loadAutoReplyRules() {
+    try {
+        const response = await fetch('{% url "list_auto_reply_rules" telegram_account.id %}');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayAutoReplyRules(data.rules);
+        } else {
+            document.getElementById('autoReplyRulesContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> ${data.error}
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('autoReplyRulesContainer').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> Yuklanmadi: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displayAutoReplyRules(rules) {
+    const container = document.getElementById('autoReplyRulesContainer');
+    
+    if (rules.length === 0) {
+        container.innerHTML = `
+            <div class="text-center" style="padding: 40px; color: var(--telegram-text-secondary);">
+                <i class="fas fa-robot" style="font-size: 48px; opacity: 0.3;"></i>
+                <p style="margin-top: 15px;">Auto-reply qoidalari yo'q</p>
+                <button onclick="showCreateRuleModal()" class="btn btn-primary" style="margin-top: 10px;">
+                    <i class="fas fa-plus"></i> Birinchi qoidani yaratish
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    rules.forEach(rule => {
+        const statusClass = rule.is_active ? 'success' : 'secondary';
+        const statusIcon = rule.is_active ? 'check-circle' : 'pause-circle';
+        const statusText = rule.is_active ? 'Aktiv' : 'O\'chirilgan';
+        
+        let triggerInfo = '';
+        if (rule.trigger_type === 'keyword') {
+            triggerInfo = `<i class="fas fa-key"></i> Kalit so'zlar: ${rule.keywords.join(', ')}`;
+        } else if (rule.trigger_type === 'all') {
+            triggerInfo = `<i class="fas fa-inbox"></i> Barcha xabarlarga javob`;
+        } else {
+            triggerInfo = `<i class="fas fa-envelope"></i> Faqat birinchi xabarga`;
+        }
+        
+        html += `
+            <div class="setting-item" style="border-left: 4px solid ${rule.is_active ? 'var(--success-color)' : 'var(--telegram-bg-secondary)'};">
+                <div class="setting-info" style="flex: 1;">
+                    <h3>
+                        <i class="fas fa-robot"></i> ${rule.name}
+                        <span class="badge badge-${statusClass}" style="margin-left: 10px;">
+                            <i class="fas fa-${statusIcon}"></i> ${statusText}
+                        </span>
+                    </h3>
+                    <p style="margin: 5px 0;">${triggerInfo}</p>
+                    <p style="margin: 5px 0; font-style: italic; opacity: 0.8;">"${rule.reply_message.substring(0, 100)}${rule.reply_message.length > 100 ? '...' : ''}"</p>
+                    <small style="opacity: 0.6;">
+                        <i class="fas fa-chart-line"></i> Ishlatildi: ${rule.usage_count} marta
+                        ${rule.delay_seconds > 0 ? `| <i class="fas fa-clock"></i> Kechikish: ${rule.delay_seconds}s` : ''}
+                        ${rule.work_hours_only ? `| <i class="fas fa-business-time"></i> Ish vaqti: ${rule.work_hours_start}-${rule.work_hours_end}` : ''}
+                    </small>
+                </div>
+                <div class="setting-action" style="display: flex; gap: 10px;">
+                    <button onclick="toggleRule(${rule.id})" class="btn btn-${rule.is_active ? 'warning' : 'success'}" title="${rule.is_active ? 'O\'chirish' : 'Yoqish'}">
+                        <i class="fas fa-${rule.is_active ? 'pause' : 'play'}"></i>
+                    </button>
+                    <button onclick="editRule(${rule.id})" class="btn btn-primary" title="Tahrirlash">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteRule(${rule.id}, '${rule.name}')" class="btn btn-danger" title="O'chirish">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function showCreateRuleModal() {
+    currentEditingRule = null;
+    document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-plus"></i> Yangi auto-reply qoidasi';
+    document.getElementById('ruleForm').reset();
+    document.getElementById('trigger_type').value = 'keyword';
+    toggleKeywordsField();
+    document.getElementById('autoReplyRuleModal').classList.add('active');
+    document.body.classList.add('modal-open');
+}
+
+async function editRule(ruleId) {
+    try {
+        const response = await fetch('{% url "list_auto_reply_rules" telegram_account.id %}');
+        const data = await response.json();
+        
+        if (data.success) {
+            const rule = data.rules.find(r => r.id === ruleId);
+            if (rule) {
+                currentEditingRule = ruleId;
+                document.getElementById('ruleModalTitle').innerHTML = '<i class="fas fa-edit"></i> Qoidani tahrirlash';
+                document.getElementById('rule_name').value = rule.name;
+                document.getElementById('trigger_type').value = rule.trigger_type;
+                document.getElementById('keywords').value = rule.keywords.join(', ');
+                document.getElementById('reply_message').value = rule.reply_message;
+                document.getElementById('delay_seconds').value = rule.delay_seconds;
+                document.getElementById('reply_once_per_user').checked = rule.reply_once_per_user;
+                document.getElementById('work_hours_only').checked = rule.work_hours_only;
+                document.getElementById('work_hours_start').value = rule.work_hours_start || '';
+                document.getElementById('work_hours_end').value = rule.work_hours_end || '';
+                document.getElementById('excluded_user_ids').value = rule.excluded_users.join(', ');
+                document.getElementById('mark_as_read').checked = rule.mark_as_read !== undefined ? rule.mark_as_read : true;
+                document.getElementById('show_typing').checked = rule.show_typing !== undefined ? rule.show_typing : true;
+                document.getElementById('typing_duration').value = rule.typing_duration || 2;
+                
+                toggleKeywordsField();
+                toggleWorkHours();
+                toggleTypingDuration();
+                document.getElementById('autoReplyRuleModal').classList.add('active');
+                document.body.classList.add('modal-open');
+            }
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+async function saveRule() {
+    const btn = document.getElementById('saveRuleBtn');
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Saqlanmoqda...';
+    
+    try {
+        const keywords = document.getElementById('keywords').value
+            .split(',')
+            .map(k => k.trim())
+            .filter(k => k);
+        
+        const excludedUsers = document.getElementById('excluded_user_ids').value
+            .split(',')
+            .map(u => u.trim())
+            .filter(u => u);
+        
+        const ruleData = {
+            name: document.getElementById('rule_name').value,
+            trigger_type: document.getElementById('trigger_type').value,
+            keywords: keywords,
+            reply_message: document.getElementById('reply_message').value,
+            delay_seconds: parseInt(document.getElementById('delay_seconds').value) || 0,
+            reply_once_per_user: document.getElementById('reply_once_per_user').checked,
+            work_hours_only: document.getElementById('work_hours_only').checked,
+            work_hours_start: document.getElementById('work_hours_start').value || null,
+            work_hours_end: document.getElementById('work_hours_end').value || null,
+            excluded_users: excludedUsers,
+            mark_as_read: document.getElementById('mark_as_read').checked,
+            show_typing: document.getElementById('show_typing').checked,
+            typing_duration: parseInt(document.getElementById('typing_duration').value) || 2,
+            is_active: true
+        };
+        
+        let url, method;
+        if (currentEditingRule) {
+            url = `/auto-reply/update/${currentEditingRule}/`;
+            method = 'POST';
+        } else {
+            url = `{% url 'create_auto_reply_rule' telegram_account.id %}`;
+            method = 'POST';
+        }
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ruleData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            closeModal('autoReplyRuleModal');
+            loadAutoReplyRules();
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function toggleRule(ruleId) {
+    try {
+        const response = await fetch(`/auto-reply/toggle/${ruleId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadAutoReplyRules();
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+async function deleteRule(ruleId, ruleName) {
+    if (!confirm(`Rostdan ham "${ruleName}" qoidasini o'chirmoqchimisiz?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/auto-reply/delete/${ruleId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            loadAutoReplyRules();
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+function toggleKeywordsField() {
+    const triggerType = document.getElementById('trigger_type').value;
+    const keywordsGroup = document.getElementById('keywords').closest('.form-group');
+    
+    if (triggerType === 'keyword') {
+        keywordsGroup.style.display = 'block';
+        document.getElementById('keywords').required = true;
+    } else {
+        keywordsGroup.style.display = 'none';
+        document.getElementById('keywords').required = false;
+    }
+}
+
+function toggleWorkHours() {
+    const workHoursOnly = document.getElementById('work_hours_only').checked;
+    const workHoursFields = document.querySelectorAll('.work-hours-field');
+    
+    workHoursFields.forEach(field => {
+        field.style.display = workHoursOnly ? 'block' : 'none';
+        if (workHoursOnly) {
+            field.querySelector('input').required = true;
+        } else {
+            field.querySelector('input').required = false;
+        }
+    });
+}
+
+function toggleTypingDuration() {
+    const showTyping = document.getElementById('show_typing').checked;
+    const typingDurationField = document.getElementById('typing_duration_field');
+    
+    if (showTyping) {
+        typingDurationField.style.display = 'block';
+    } else {
+        typingDurationField.style.display = 'none';
+    }
+}
+
+// Monitoring functions
+async function checkMonitoringStatus() {
+    try {
+        const response = await fetch('{% url "monitoring_status" %}');
+        const data = await response.json();
+        
+        const statusEl = document.getElementById('monitoringStatus');
+        if (data.success && data.running) {
+            statusEl.innerHTML = '<span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Monitor ishlamoqda (har ' + data.check_interval + 's)</span>';
+        } else {
+            statusEl.innerHTML = '<span style="color: var(--danger-color);"><i class="fas fa-times-circle"></i> Monitor to\'xtatilgan</span> <button onclick="startMonitoring()" class="btn btn-sm btn-primary" style="margin-left: 10px; padding: 4px 12px;">Ishga tushirish</button>';
+        }
+    } catch (error) {
+        document.getElementById('monitoringStatus').innerHTML = '<span style="color: var(--warning-color);"><i class="fas fa-exclamation-triangle"></i> Status noma\'lum</span>';
+    }
+}
+
+async function startMonitoring() {
+    try {
+        const response = await fetch('{% url "start_monitoring" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            checkMonitoringStatus();
+        } else {
+            alert('❌ Xatolik: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Xatolik: ' + error.message);
+    }
+}
+
+// Load rules on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadAutoReplyRules();
+    checkMonitoringStatus();
+    
+    // Check monitoring status every 10 seconds
+    setInterval(checkMonitoringStatus, 10000);
+});
+</script>
+
+<!-- Auto-Reply Rule Modal -->
+<div id="autoReplyRuleModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <h2 id="ruleModalTitle"><i class="fas fa-plus"></i> Yangi auto-reply qoidasi</h2>
+        
+        <form id="ruleForm" onsubmit="event.preventDefault(); saveRule();">
+            <div class="form-group">
+                <label for="rule_name"><i class="fas fa-tag"></i> Qoida nomi *</label>
+                <input type="text" id="rule_name" class="form-control" placeholder="Masalan: Salom deb javob berish" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="trigger_type"><i class="fas fa-cog"></i> Trigger turi *</label>
+                <select id="trigger_type" class="form-control" onchange="toggleKeywordsField()" required>
+                    <option value="keyword">Kalit so'zlar</option>
+                    <option value="all_messages">Barcha xabarlarga</option>
+                    <option value="first_message">Faqat birinchi xabarga</option>
+                </select>
+                <small style="color: var(--telegram-text-secondary);">
+                    • <strong>Kalit so'zlar:</strong> Xabarda kalit so'z bo'lsa javob beradi<br>
+                    • <strong>Barcha xabarlarga:</strong> Har qanday xabarga javob beradi<br>
+                    • <strong>Faqat birinchi xabarga:</strong> Yangi chatda birinchi xabarga javob beradi
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="keywords"><i class="fas fa-key"></i> Kalit so'zlar (vergul bilan ajratilgan) *</label>
+                <input type="text" id="keywords" class="form-control" placeholder="salom, assalomu alaykum, hello">
+                <small style="color: var(--telegram-text-secondary);">Xabarda ushbu so'zlardan biri bo'lsa javob beriladi</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="reply_message"><i class="fas fa-comment"></i> Javob matni *</label>
+                <textarea id="reply_message" class="form-control" rows="4" placeholder="Assalomu alaykum! Qanday yordam bera olaman?" required></textarea>
+                <small style="color: var(--telegram-text-secondary);">Bu matn avtomatik yuboriladi</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="delay_seconds"><i class="fas fa-clock"></i> Kechikish (soniyalarda)</label>
+                <input type="number" id="delay_seconds" class="form-control" min="0" max="300" value="0">
+                <small style="color: var(--telegram-text-secondary);">Javob berishdan oldin kutish vaqti (0 = darhol)</small>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="reply_once_per_user" style="margin-right: 10px;">
+                    <span><i class="fas fa-user-check"></i> Har bir foydalanuvchiga faqat bir marta javob berish</span>
+                </label>
+                <small style="color: var(--telegram-text-secondary); margin-left: 30px;">Agar belgilangan bo'lsa, bir foydalanuvchiga bir marta javob beriladi</small>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="work_hours_only" onchange="toggleWorkHours()" style="margin-right: 10px;">
+                    <span><i class="fas fa-business-time"></i> Faqat ish vaqtida ishlash</span>
+                </label>
+                <small style="color: var(--telegram-text-secondary); margin-left: 30px;">Faqat ma'lum vaqt oralig'ida javob berish</small>
+            </div>
+            
+            <div class="form-group work-hours-field" style="display: none;">
+                <label for="work_hours_start"><i class="fas fa-clock"></i> Ish vaqti boshlanishi</label>
+                <input type="time" id="work_hours_start" class="form-control" value="09:00">
+            </div>
+            
+            <div class="form-group work-hours-field" style="display: none;">
+                <label for="work_hours_end"><i class="fas fa-clock"></i> Ish vaqti tugashi</label>
+                <input type="time" id="work_hours_end" class="form-control" value="18:00">
+            </div>
+            
+            <div class="form-group">
+                <label for="excluded_user_ids"><i class="fas fa-user-slash"></i> Istisno foydalanuvchilar (ID, vergul bilan)</label>
+                <input type="text" id="excluded_user_ids" class="form-control" placeholder="123456789, 987654321">
+                <small style="color: var(--telegram-text-secondary);">Bu foydalanuvchilarga javob berilmaydi</small>
+            </div>
+            
+            <div class="form-group" style="border-top: 1px solid var(--telegram-border); padding-top: 15px; margin-top: 15px;">
+                <h4 style="margin-bottom: 15px;"><i class="fas fa-robot"></i> Realistik xatti-harakat</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="mark_as_read" checked style="margin-right: 10px;">
+                        <span><i class="fas fa-eye"></i> Xabarni o'qilgan deb belgilash (Double Tick ✓✓)</span>
+                    </label>
+                    <small style="color: var(--telegram-text-secondary); margin-left: 30px;">Xabar oluvchida xabar o'qilganligini ko'rsatadi (2 ta galochka)</small>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="show_typing" checked style="margin-right: 10px;" onchange="toggleTypingDuration()">
+                        <span><i class="fas fa-keyboard"></i> Typing ko'rsatish (Yozmoqda...)</span>
+                    </label>
+                    <small style="color: var(--telegram-text-secondary); margin-left: 30px;">Javob yuborishdan oldin "yozmoqda..." holatini ko'rsatadi</small>
+                </div>
+                
+                <div class="form-group" id="typing_duration_field">
+                    <label for="typing_duration"><i class="fas fa-stopwatch"></i> Typing davomiyligi (soniyalarda)</label>
+                    <input type="number" id="typing_duration" class="form-control" min="1" max="10" value="2">
+                    <small style="color: var(--telegram-text-secondary);">Qancha vaqt "yozmoqda..." holatini ko'rsatish (1-10 soniya)</small>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('autoReplyRuleModal')" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Bekor qilish
+                </button>
+                <button type="submit" class="btn btn-success" id="saveRuleBtn">
+                    <i class="fas fa-save"></i> Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

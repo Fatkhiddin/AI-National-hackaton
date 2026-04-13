@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}{{ chat.title|default:"Chat" }}{% endblock %}
+{% block page_title %}{{ chat.title|default:"Chat" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex; flex-direction: column;
+        height: calc(100vh - var(--navbar-h) - 80px);
+    }
+    .chat-header-bar {
+        display: flex; align-items: center; gap: 16px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.02);
+    }
+    .chat-header-avatar {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6, #06b6d4);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; color: white; flex-shrink: 0;
+    }
+    .chat-header-info { flex: 1; }
+    .chat-header-title { font-weight: 700; font-size: 1rem; }
+    .chat-header-sub { font-size: 0.8rem; color: var(--text-secondary); }
+
+    .messages-area {
+        flex: 1; overflow-y: auto; padding: 20px;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .msg-bubble {
+        max-width: 70%; padding: 10px 16px;
+        border-radius: 16px; font-size: 0.9rem;
+        line-height: 1.5; word-break: break-word;
+        position: relative;
+    }
+    .msg-incoming {
+        align-self: flex-start;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-bottom-left-radius: 4px;
+    }
+    .msg-outgoing {
+        align-self: flex-end;
+        background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.2));
+        border: 1px solid rgba(99,102,241,0.2);
+        border-bottom-right-radius: 4px;
+    }
+    .msg-time {
+        font-size: 0.65rem; color: var(--text-secondary);
+        margin-top: 4px; text-align: right;
+    }
+    .msg-date-divider {
+        text-align: center; padding: 8px 0;
+    }
+    .msg-date-divider span {
+        background: rgba(255,255,255,0.06);
+        padding: 4px 16px; border-radius: 20px;
+        font-size: 0.75rem; color: var(--text-secondary);
+    }
+
+    .chat-input-bar {
+        display: flex; gap: 12px; padding: 16px 20px;
+        border-top: 1px solid var(--border-color);
+        background: rgba(255,255,255,0.02);
+    }
+    .chat-input-bar input {
+        flex: 1;
+    }
+    .empty-messages {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 12px; color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'telegramai:chats_list' %}?account={{ telegram_account.id }}" class="btn btn-outline-secondary btn-sm">← Chatlar ro'yxati</a>
+    {% if not messages.exists %}
+    <a href="{% url 'telegramai:chats_detail' telegram_account.id chat.chat_id %}?load=1" class="btn btn-outline-primary btn-sm ms-2">🔄 Xabarlarni yuklash</a>
+    {% endif %}
+</div>
+
+<div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header-bar">
+        <div class="chat-header-avatar">
+            {% if chat.chat_type == 'private' %}👤{% elif chat.chat_type == 'group' %}👥{% else %}📢{% endif %}
+        </div>
+        <div class="chat-header-info">
+            <div class="chat-header-title">{{ chat.title|default:chat.username|default:"Chat" }}</div>
+            <div class="chat-header-sub">
+                {% if chat.username %}@{{ chat.username }} · {% endif %}
+                {{ chat.chat_type|capfirst }}
+                {% if chat.member_count %} · {{ chat.member_count }} a'zo{% endif %}
+            </div>
+        </div>
+        <a href="{% url 'telegramai:chats_detail' telegram_account.id chat.chat_id %}?load=1" class="btn btn-outline-secondary btn-sm">🔄</a>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-area" id="messagesArea">
+        {% if messages %}
+            {% for msg in messages %}
+            <div class="msg-bubble {% if msg.is_outgoing %}msg-outgoing{% else %}msg-incoming{% endif %}">
+                {{ msg.text }}
+                <div class="msg-time">{{ msg.date|date:"d.m.Y H:i" }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-messages">
+            <div style="font-size:3rem;">💬</div>
+            <p>Xabarlar topilmadi</p>
+            <a href="{% url 'telegramai:chats_detail' telegram_account.id chat.chat_id %}?load=1" class="btn btn-primary btn-sm">Telegram'dan yuklash</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Input -->
+    <form class="chat-input-bar" id="sendForm">
+        {% csrf_token %}
+        <input type="text" name="message" class="form-control" placeholder="Xabar yozing..." autocomplete="off" id="messageInput">
+        <button type="submit" class="btn btn-primary" id="sendBtn">📨</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Scroll to bottom
+const area = document.getElementById('messagesArea');
+if (area) area.scrollTop = area.scrollHeight;
+
+// Send message via AJAX
+document.getElementById('sendForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('messageInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+
+    // Optimistic UI
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble msg-outgoing';
+    bubble.innerHTML = msg + '<div class="msg-time">Hozir</div>';
+    area.appendChild(bubble);
+    area.scrollTop = area.scrollHeight;
+    input.value = '';
+
+    const formData = new FormData();
+    formData.append('message', msg);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch('{% url "telegramai:send_message_to_chat" telegram_account.id chat.chat_id %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (!data.success) {
+            bubble.style.borderColor = 'rgba(239,68,68,0.5)';
+            bubble.innerHTML += '<div style="color:#fca5a5;font-size:0.7rem;">⚠️ ' + (data.error || 'Xatolik') + '</div>';
+        }
+    })
+    .catch(() => { btn.disabled = false; });
+});
+</script>
+{% endblock %}
